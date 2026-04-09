@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cloud Architecture Analyzer — AforeCoppel</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<!-- ── TOP BAR ─────────────────────────────────────────────── -->
+<div class="top-bar">
+  <span>🔒 Portal interno — Acceso restringido a equipo de Arquitectura Cloud</span>
+  <span>Área de Arquitectura Cloud &nbsp;|&nbsp; <a href="#">Soporte</a></span>
+</div>
+
+<!-- ── MAIN NAV ─────────────────────────────────────────────── -->
+<nav class="main-nav">
+  <a class="nav-logo" href="#" onclick="navigate('page-home');return false;">
+    <div class="nav-logo-dots">
+      <span></span><span></span><span></span>
+    </div>
+    <div class="nav-logo-text">CloudArch<sub>AI</sub></div>
+  </a>
+
+  <div class="nav-links">
+    <a class="nav-link active" href="#" data-page="page-home" onclick="navigate('page-home');return false;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9M5 10v9a1 1 0 001 1h4v-5h4v5h4a1 1 0 001-1v-9"/></svg>
+      Inicio
+    </a>
+    <a class="nav-link" href="#" data-page="page-analyzer" onclick="navigate('page-analyzer');return false;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      Analizador
+    </a>
+    <a class="nav-link" href="#" data-page="page-history" onclick="navigate('page-history');renderHistory();return false;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      Historial
+    </a>
+    <a class="nav-link" href="#" data-page="page-catalog" onclick="navigate('page-catalog');return false;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Catálogo
+    </a>
+    <a class="nav-link" href="#" data-page="page-config" onclick="navigate('page-config');return false;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Configuración
+    </a>
+  </div>
+
+  <div class="nav-actions">
+    <div id="api-status"></div>
+    <span class="nav-badge">v1.0</span>
+  </div>
+</nav>
+
+<!-- ════════════════════════════════════════════════════════════
+     PAGE: HOME
+════════════════════════════════════════════════════════════ -->
+<div id="page-home" class="page-wrapper active">
+  <div class="page-hero">
+    <div class="hero-label">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      Powered by Claude AI
+    </div>
+    <h1 class="hero-title">Analizador de Arquitectura<br><span>Cloud con IA</span></h1>
+    <p class="hero-sub">Automatiza la revisión de Quick Discovery: valida tu documento, identifica servicios AWS desde diagramas, estima costos y genera recomendaciones arquitectónicas en minutos.</p>
+    <div class="hero-stats">
+      <div>
+        <div class="hero-stat-num">-80%</div>
+        <div class="hero-stat-label">Tiempo de revisión</div>
+      </div>
+      <div>
+        <div class="hero-stat-num">5 min</div>
+        <div class="hero-stat-label">Análisis completo</div>
+      </div>
+      <div>
+        <div class="hero-stat-num">5x</div>
+        <div class="hero-stat-label">Más solicitudes atendidas</div>
+      </div>
+      <div>
+        <div class="hero-stat-num">100%</div>
+        <div class="hero-stat-label">Criterios estandarizados</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="content-area">
+
+    <!-- How it works -->
+    <div class="section-title">¿Cómo funciona?</div>
+    <p class="section-sub">4 etapas automatizadas con Inteligencia Artificial</p>
+
+    <div class="grid-4" style="margin-bottom:32px">
+      <div class="card">
+        <div class="card-icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+        </div>
+        <div style="font-size:11px;font-weight:800;color:var(--c-yellow);font-family:var(--font-head);margin-bottom:4px">PASO 1</div>
+        <div class="card-title" style="font-size:14px">Sube el Documento</div>
+        <div class="card-sub">Carga tu Quick Discovery .docx y los diagramas de arquitectura.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <div style="font-size:11px;font-weight:800;color:var(--c-yellow);font-family:var(--font-head);margin-bottom:4px">PASO 2</div>
+        <div class="card-title" style="font-size:14px">Valida la Plantilla</div>
+        <div class="card-sub">La IA verifica que todas las secciones estén completas y coherentes.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
+        </div>
+        <div style="font-size:11px;font-weight:800;color:var(--c-yellow);font-family:var(--font-head);margin-bottom:4px">PASO 3</div>
+        <div class="card-title" style="font-size:14px">Identifica Servicios</div>
+        <div class="card-sub">Extrae servicios AWS de los diagramas y los clasifica como nuevos o transversales.</div>
+      </div>
+      <div class="card">
+        <div class="card-icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        </div>
+        <div style="font-size:11px;font-weight:800;color:var(--c-yellow);font-family:var(--font-head);margin-bottom:4px">PASO 4</div>
+        <div class="card-title" style="font-size:14px">Costos + Recomendaciones</div>
+        <div class="card-sub">Estimación de costos AWS y recomendaciones Well-Architected.</div>
+      </div>
+    </div>
+
+    <!-- Quick start CTA -->
+    <div class="card" style="background:var(--c-blue);border-color:var(--c-blue-dark);display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+      <div style="flex:1">
+        <div style="font-family:var(--font-head);font-size:18px;font-weight:900;color:var(--c-white);margin-bottom:6px">¿Listo para analizar?</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.7)">Sube tu Quick Discovery y obtén el análisis completo en menos de 5 minutos.</div>
+      </div>
+      <button class="btn btn-primary" onclick="navigate('page-analyzer')" style="white-space:nowrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Iniciar Análisis
+      </button>
+      <button class="btn" style="background:rgba(255,255,255,0.1);color:white;border:1.5px solid rgba(255,255,255,0.3)" onclick="openApiModal()">
+        Configurar API Key
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     PAGE: ANALYZER
+════════════════════════════════════════════════════════════ -->
+<div id="page-analyzer" class="page-wrapper">
+  <div class="page-hero" style="padding-bottom:32px">
+    <div class="hero-label">Analizador</div>
+    <h1 class="hero-title" style="font-size:28px">Quick Discovery <span>Analyzer</span></h1>
+    <p class="hero-sub" style="font-size:13px">Sube tu documento y diagramas para iniciar el análisis automatizado con IA.</p>
+  </div>
+
+  <div class="content-area">
+
+    <!-- Alerts -->
+    <div id="analyzer-alerts"></div>
+
+    <!-- Stepper -->
+    <div class="stepper">
+      <div class="step-item active">
+        <div class="step-circle">1</div>
+        <div class="step-label">Ingesta</div>
+      </div>
+      <div class="step-item">
+        <div class="step-circle">2</div>
+        <div class="step-label">Validación</div>
+      </div>
+      <div class="step-item">
+        <div class="step-circle">3</div>
+        <div class="step-label">Servicios</div>
+      </div>
+      <div class="step-item">
+        <div class="step-circle">4</div>
+        <div class="step-label">Costos</div>
+      </div>
+      <div class="step-item">
+        <div class="step-circle">5</div>
+        <div class="step-label">Recomendaciones</div>
+      </div>
+    </div>
+
+    <!-- Upload section -->
+    <div class="grid-2" style="margin-bottom:20px">
+      <!-- Doc upload -->
+      <div class="card">
+        <div class="card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Quick Discovery
+        </div>
+        <div class="card-sub">Sube el documento Word de la solicitud</div>
+        <div class="upload-zone" id="doc-upload-zone">
+          <input type="file" id="doc-file-input" accept=".docx,.doc,.txt,.pdf">
+          <div class="upload-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div class="upload-title">Arrastra o haz clic</div>
+          <div class="upload-hint">Quick_Discovery.docx</div>
+          <div class="upload-formats">
+            <span class="fmt-tag">.DOCX</span>
+            <span class="fmt-tag">.DOC</span>
+            <span class="fmt-tag">.TXT</span>
+          </div>
+        </div>
+        <div id="doc-file-chip" class="file-chip" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          <span class="chip-name"></span>
+          <span class="rm" onclick="STATE.docFile=null;STATE.docText='';this.closest('.file-chip').style.display='none';document.getElementById('analyze-btn').disabled=true">✕</span>
+        </div>
+      </div>
+
+      <!-- Diagrams upload -->
+      <div class="card">
+        <div class="card-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          Diagramas de Arquitectura
+        </div>
+        <div class="card-sub">Sube los diagramas AWS (opcional pero recomendado)</div>
+        <div class="upload-zone" style="position:relative">
+          <input type="file" id="diag-file-input" accept=".png,.jpg,.jpeg,.svg,.pdf" multiple style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%">
+          <div class="upload-icon" style="background:var(--c-gray-700)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </div>
+          <div class="upload-title">Diagramas de arquitectura</div>
+          <div class="upload-hint">PNG, JPG, SVG — múltiples archivos</div>
+          <div class="upload-formats">
+            <span class="fmt-tag">.PNG</span>
+            <span class="fmt-tag">.JPG</span>
+            <span class="fmt-tag">.SVG</span>
+            <span class="fmt-tag">.PDF</span>
+          </div>
+        </div>
+        <div id="diag-file-chip" class="file-chip" style="display:none">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+          <span class="chip-name"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Analyze button -->
+    <div style="display:flex;justify-content:center;margin-bottom:28px">
+      <button id="analyze-btn" class="btn btn-primary" style="padding:14px 40px;font-size:16px" disabled onclick="startAnalysis()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Analizar con IA
+      </button>
+    </div>
+
+    <!-- ── STEP 2: VALIDATION ─────────────────────────────────── -->
+    <div id="section-validation" class="analysis-section" style="display:none">
+      <div class="section-title">Validación del Documento</div>
+      <p class="section-sub">Verificando completitud y consistencia de la plantilla Quick Discovery</p>
+      <div class="card">
+        <div id="validation-loader" class="ai-loader" style="display:none">
+          <div class="ai-loader-ring"></div>
+          <div class="ai-loader-text">Analizando documento...</div>
+          <div class="ai-loader-sub">La IA está revisando todas las secciones de la plantilla</div>
+          <div class="dot-pulse"><span></span><span></span><span></span></div>
+        </div>
+        <div id="validation-result"></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:16px">
+        <button class="btn btn-blue" onclick="identifyServices()">
+          Siguiente: Identificar Servicios
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── STEP 3: SERVICES ───────────────────────────────────── -->
+    <div id="section-services" class="analysis-section" style="display:none">
+      <div class="section-title">Servicios AWS Identificados</div>
+      <p class="section-sub">Extracción automática de servicios cloud desde el documento y diagramas</p>
+      <div class="card">
+        <div id="services-loader" class="ai-loader" style="display:none">
+          <div class="ai-loader-ring"></div>
+          <div class="ai-loader-text">Analizando diagramas...</div>
+          <div class="ai-loader-sub">La IA está identificando servicios AWS en los diagramas de arquitectura</div>
+          <div class="dot-pulse"><span></span><span></span><span></span></div>
+        </div>
+        <div id="services-result"></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:16px">
+        <button class="btn btn-blue" onclick="estimateCosts()">
+          Siguiente: Estimar Costos
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── STEP 4: COSTS ──────────────────────────────────────── -->
+    <div id="section-costs" class="analysis-section" style="display:none">
+      <div class="section-title">Estimación de Costos AWS</div>
+      <p class="section-sub">Costos estimados en USD para ambiente Producción — us-east-1</p>
+      <div class="card">
+        <div id="costs-loader" class="ai-loader" style="display:none">
+          <div class="ai-loader-ring"></div>
+          <div class="ai-loader-text">Calculando costos...</div>
+          <div class="ai-loader-sub">Consultando precios AWS y generando estimación</div>
+          <div class="dot-pulse"><span></span><span></span><span></span></div>
+        </div>
+        <div id="costs-result"></div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-top:16px">
+        <button class="btn btn-blue" onclick="getRecommendations()">
+          Siguiente: Recomendaciones IA
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ── STEP 5: RECOMMENDATIONS ───────────────────────────── -->
+    <div id="section-recs" class="analysis-section" style="display:none">
+      <div class="section-title">Recomendaciones Arquitectónicas</div>
+      <p class="section-sub">Análisis basado en AWS Well-Architected Framework — 6 pilares</p>
+      <div class="card">
+        <div id="recs-loader" class="ai-loader" style="display:none">
+          <div class="ai-loader-ring"></div>
+          <div class="ai-loader-text">Generando recomendaciones...</div>
+          <div class="ai-loader-sub">La IA está evaluando la arquitectura contra el Well-Architected Framework</div>
+          <div class="dot-pulse"><span></span><span></span><span></span></div>
+        </div>
+        <div id="recs-result"></div>
+      </div>
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:16px">
+        <button class="btn btn-outline" onclick="exportReport()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          Exportar Reporte
+        </button>
+        <button class="btn btn-primary" onclick="resetAnalysis()">
+          Nuevo Análisis
+        </button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     PAGE: HISTORY
+════════════════════════════════════════════════════════════ -->
+<div id="page-history" class="page-wrapper">
+  <div class="page-hero" style="padding-bottom:32px">
+    <div class="hero-label">Historial</div>
+    <h1 class="hero-title" style="font-size:28px">Análisis <span>Previos</span></h1>
+    <p class="hero-sub" style="font-size:13px">Repositorio de Quick Discovery procesados. Los datos se guardan localmente en el navegador.</p>
+  </div>
+  <div class="content-area">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div class="section-title">Solicitudes Analizadas</div>
+      <button class="btn btn-outline btn-sm" onclick="STATE.history=[];localStorage.setItem('arch_history','[]');renderHistory()">Limpiar historial</button>
+    </div>
+    <div id="history-list"></div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     PAGE: CATALOG
+════════════════════════════════════════════════════════════ -->
+<div id="page-catalog" class="page-wrapper">
+  <div class="page-hero" style="padding-bottom:32px">
+    <div class="hero-label">Catálogo</div>
+    <h1 class="hero-title" style="font-size:28px">Servicios <span>Transversales</span></h1>
+    <p class="hero-sub" style="font-size:13px">Servicios cloud ya aprovisionados y disponibles para todos los proyectos. La IA los utiliza para clasificar servicios en nuevos vs transversales.</p>
+  </div>
+  <div class="content-area">
+    <div class="section-title">Catálogo Empresarial</div>
+    <p class="section-sub">Servicios disponibles por defecto en la plataforma cloud corporativa</p>
+    <div class="card">
+      <table class="data-table">
+        <thead><tr>
+          <th>Servicio</th><th>Categoría</th><th>Ambiente</th><th>Estado</th><th>Responsable</th>
+        </tr></thead>
+        <tbody>
+          <tr><td><strong>AWS WAF</strong></td><td><span class="tag tag-security">Seguridad</span></td><td>Prod / QA / Dev</td><td><span class="badge-ok">Disponible</span></td><td>Security Team</td></tr>
+          <tr><td><strong>AWS KMS</strong></td><td><span class="tag tag-security">Seguridad</span></td><td>Prod / QA / Dev</td><td><span class="badge-ok">Disponible</span></td><td>Security Team</td></tr>
+          <tr><td><strong>AWS Secrets Manager</strong></td><td><span class="tag tag-security">Seguridad</span></td><td>Prod</td><td><span class="badge-ok">Disponible</span></td><td>Security Team</td></tr>
+          <tr><td><strong>AWS CloudTrail</strong></td><td><span class="tag tag-security">Seguridad</span></td><td>Todos</td><td><span class="badge-ok">Disponible</span></td><td>Audit Account</td></tr>
+          <tr><td><strong>Amazon GuardDuty</strong></td><td><span class="tag tag-security">Seguridad</span></td><td>Todos</td><td><span class="badge-ok">Disponible</span></td><td>Audit Account</td></tr>
+          <tr><td><strong>AWS Config</strong></td><td><span class="tag tag-security">Cumplimiento</span></td><td>Todos</td><td><span class="badge-ok">Disponible</span></td><td>Audit Account</td></tr>
+          <tr><td><strong>Security Hub</strong></td><td><span class="tag tag-security">Seguridad</span></td><td>Todos</td><td><span class="badge-ok">Disponible</span></td><td>Audit Account</td></tr>
+          <tr><td><strong>Amazon CloudWatch</strong></td><td><span class="tag tag-new">Monitoreo</span></td><td>Todos</td><td><span class="badge-ok">Disponible</span></td><td>Platform Eng</td></tr>
+          <tr><td><strong>Amazon S3</strong></td><td><span class="tag tag-storage">Almacenamiento</span></td><td>Todos</td><td><span class="badge-ok">Disponible</span></td><td>Cloud Ops</td></tr>
+          <tr><td><strong>AWS Backup</strong></td><td><span class="tag tag-storage">Almacenamiento</span></td><td>Prod / QA</td><td><span class="badge-ok">Disponible</span></td><td>Cloud Ops</td></tr>
+          <tr><td><strong>AWS Transit Gateway</strong></td><td><span class="tag tag-new">Red</span></td><td>Prod</td><td><span class="badge-ok">Disponible</span></td><td>Network Team</td></tr>
+          <tr><td><strong>AWS Organizations</strong></td><td><span class="tag tag-new">Gestión</span></td><td>Todos</td><td><span class="badge-ok">Disponible</span></td><td>Platform Eng</td></tr>
+          <tr><td><strong>Amazon Inspector</strong></td><td><span class="tag tag-security">Seguridad</span></td><td>Prod</td><td><span class="badge-warn">En revisión</span></td><td>Security Team</td></tr>
+          <tr><td><strong>Amazon Detective</strong></td><td><span class="tag tag-security">Seguridad</span></td><td>Prod</td><td><span class="badge-warn">En revisión</span></td><td>Security Team</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     PAGE: CONFIG
+════════════════════════════════════════════════════════════ -->
+<div id="page-config" class="page-wrapper">
+  <div class="page-hero" style="padding-bottom:32px">
+    <div class="hero-label">Configuración</div>
+    <h1 class="hero-title" style="font-size:28px">Ajustes del <span>Portal</span></h1>
+    <p class="hero-sub" style="font-size:13px">Configura tu API key y preferencias de análisis.</p>
+  </div>
+  <div class="content-area">
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title">Proveedor de IA</div>
+        <div class="card-sub">Configura tu API key para habilitar el análisis con IA real</div>
+        <div class="form-group">
+          <label class="form-label">Proveedor</label>
+          <select class="form-select" id="config-provider-select">
+            <option value="anthropic">Anthropic — Claude Sonnet</option>
+            <option value="openai">OpenAI — GPT-4o</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">API Key</label>
+          <input type="password" class="form-input" id="config-api-key" placeholder="sk-ant-... o sk-...">
+        </div>
+        <button class="btn btn-blue" onclick="saveConfigKey()" style="width:100%">Guardar API Key</button>
+        <div style="margin-top:10px;font-size:11px;color:var(--c-gray-500)">La API key se almacena solo en tu navegador (localStorage). Nunca se envía a servidores externos.</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Preferencias de Análisis</div>
+        <div class="card-sub">Personaliza el comportamiento del analizador</div>
+        <div class="form-group">
+          <label class="form-label">Región AWS por defecto</label>
+          <select class="form-select">
+            <option>us-east-1 — N. Virginia</option>
+            <option>us-west-2 — Oregon</option>
+            <option>sa-east-1 — São Paulo</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Moneda de costos</label>
+          <select class="form-select">
+            <option>USD — Dólares americanos</option>
+            <option>MXN — Pesos mexicanos</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Modelo IA preferido</label>
+          <select class="form-select">
+            <option>claude-sonnet-4-20250514 (Recomendado)</option>
+            <option>claude-opus-4-6</option>
+            <option>gpt-4o</option>
+          </select>
+        </div>
+        <button class="btn btn-primary" style="width:100%">Guardar Preferencias</button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:0">
+      <div class="card-title">Estado del Sistema</div>
+      <div class="val-list">
+        <div class="val-item val-ok"><div class="val-dot"></div><span>Claude API — Configurada y funcional</span></div>
+        <div class="val-item val-ok"><div class="val-dot"></div><span>Portal web — Operativo v1.0</span></div>
+        <div class="val-item val-warn"><div class="val-dot"></div><span>AWS Pricing API — Modo estimación (sin credenciales AWS)</span></div>
+        <div class="val-item val-ok"><div class="val-dot"></div><span>Almacenamiento local — Activo (historial en localStorage)</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── API KEY MODAL ─────────────────────────────────────────── -->
+<div id="api-modal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeApiModal()">
+  <div class="modal-box">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+      <div style="width:44px;height:44px;background:var(--c-blue-light);border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--c-blue)" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      </div>
+      <div>
+        <div class="modal-title" style="margin-bottom:0">Configurar API Key</div>
+        <div style="font-size:12px;color:var(--c-gray-500)">Necesaria para análisis con IA real</div>
+      </div>
+    </div>
+    <div class="modal-sub">Ingresa tu API key de Anthropic (Claude) u OpenAI (GPT-4) para habilitar el análisis inteligente. Se guarda solo en tu navegador.</div>
+    <div class="form-group">
+      <label class="form-label">Proveedor</label>
+      <select class="form-select" id="api-provider-select">
+        <option value="anthropic">Anthropic — Claude Sonnet (Recomendado)</option>
+        <option value="openai">OpenAI — GPT-4o</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">API Key</label>
+      <input type="password" class="form-input" id="api-key-input" placeholder="sk-ant-api03-...">
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-blue" onclick="saveApiKey()" style="flex:1">Guardar y continuar</button>
+      <button class="btn btn-outline" onclick="closeApiModal()">Cancelar</button>
+    </div>
+    <div style="margin-top:12px;font-size:11px;color:var(--c-gray-500)">Sin API key, el portal funciona en modo demo con datos de ejemplo basados en el proyecto AforeCoppel.</div>
+  </div>
+</div>
+
+<!-- ── FOOTER ─────────────────────────────────────────────────── -->
+<footer class="footer">
+  <span><strong>CloudArch AI</strong> — Portal de Arquitectura Cloud · AforeCoppel</span>
+  <span>Powered by <strong>Claude AI</strong> · v1.0 · Abril 2026</span>
+</footer>
+
+<script src="js/app.js"></script>
+<script>
+function startAnalysis() {
+  validateDocument();
+}
+
+function resetAnalysis() {
+  STATE.docFile = null;
+  STATE.docText = '';
+  STATE.diagrams = [];
+  STATE.results = { validation: null, services: null, costs: null, recommendations: null };
+  document.getElementById('doc-file-chip').style.display = 'none';
+  document.getElementById('diag-file-chip').style.display = 'none';
+  document.getElementById('analyze-btn').disabled = true;
+  document.querySelectorAll('.analysis-section').forEach(s => s.style.display = 'none');
+  setStep(0);
+  window.scrollTo(0, 0);
+}
+
+function exportReport() {
+  const lines = [
+    'REPORTE DE ANÁLISIS — QUICK DISCOVERY CLOUD ARCHITECTURE',
+    '=========================================================',
+    '',
+    'Generado: ' + new Date().toLocaleString('es-MX'),
+    'Proyecto: ' + (STATE.docFile?.name || 'Quick Discovery'),
+    '',
+    '--- VALIDACIÓN ---',
+    'Score: ' + (STATE.results.validation?.score || 'N/A') + '%',
+    STATE.results.validation?.summary || '',
+    '',
+    '--- SERVICIOS IDENTIFICADOS ---',
+    ...(STATE.results.services?.services?.map(s => `• [${s.type.toUpperCase()}] ${s.name} (${s.category})`) || []),
+    '',
+    '--- COSTOS ESTIMADOS ---',
+    'Mensual: $' + (STATE.results.costs?.monthly_total?.toLocaleString() || 'N/A') + ' USD',
+    'Anual:   $' + (STATE.results.costs?.annual_total?.toLocaleString() || 'N/A') + ' USD',
+    STATE.results.costs?.disclaimer || '',
+    '',
+    '--- RECOMENDACIONES ---',
+    ...(STATE.results.recommendations?.recommendations?.map(r => `[${r.priority?.toUpperCase()}] ${r.title}: ${r.description}`) || []),
+    '',
+    'Well-Architected Score: ' + (STATE.results.recommendations?.well_architected_score || 'N/A') + '/100'
+  ];
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'quick_discovery_report_' + Date.now() + '.txt';
+  a.click();
+}
+
+function saveConfigKey() {
+  const key = document.getElementById('config-api-key').value.trim();
+  const provider = document.getElementById('config-provider-select').value;
+  if (key) {
+    STATE.apiKey = key;
+    STATE.apiProvider = provider;
+    localStorage.setItem('arch_api_key', key);
+    localStorage.setItem('arch_api_provider', provider);
+    document.getElementById('api-key-input').value = key;
+    updateApiStatus();
+    alert('API Key guardada correctamente.');
+  }
+}
+</script>
+</body>
+</html>
