@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Propuesta de Arquitectura — CloudArch AI</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .propuesta-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px; }
+    .propuesta-status { display:flex;align-items:center;gap:10px; }
+    .propuesta-status-dot { width:10px;height:10px;border-radius:50%; }
+    .propuesta-status-dot.ok { background:#00A651; }
+    .propuesta-status-dot.pending { background:#FF8C00;animation:pulse 1.5s infinite; }
+    .propuesta-status-dot.error { background:#E53935; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .propuesta-status-text { font-size:13px;font-weight:700;font-family:var(--font-head); }
+    .doc-preview { background:var(--c-white);border:1.5px solid var(--c-gray-200);border-radius:var(--radius-lg);padding:32px 40px;max-width:800px;margin:0 auto;box-shadow:var(--shadow-sm); }
+    .doc-preview h1 { font-family:var(--font-head);font-size:22px;font-weight:900;color:var(--c-blue);margin:28px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--c-blue-light); }
+    .doc-preview h2 { font-family:var(--font-head);font-size:16px;font-weight:800;color:var(--c-gray-700);margin:20px 0 8px; }
+    .doc-preview p { font-size:14px;line-height:1.7;color:var(--c-gray-700);margin-bottom:12px; }
+    .doc-preview ul { padding-left:20px;margin-bottom:12px; }
+    .doc-preview li { font-size:14px;line-height:1.7;color:var(--c-gray-700);margin-bottom:4px; }
+    .doc-portada { text-align:center;padding:40px 20px;border-bottom:3px solid var(--c-blue); }
+    .doc-portada-logo { font-family:var(--font-head);font-size:28px;font-weight:900;color:var(--c-blue);margin-bottom:24px; }
+    .doc-portada-title { font-family:var(--font-head);font-size:20px;font-weight:800;color:var(--c-gray-700);margin-bottom:8px; }
+    .doc-portada-sub { font-size:14px;color:var(--c-gray-500); }
+    .doc-toc { background:var(--c-gray-100);border-radius:var(--radius-md);padding:16px 20px;margin:20px 0; }
+    .doc-toc-item { display:flex;justify-content:space-between;padding:6px 0;font-size:13px;border-bottom:1px dotted var(--c-gray-300); }
+    .doc-toc-item:last-child { border-bottom:none; }
+    .doc-toc-item a { color:var(--c-blue);text-decoration:none;font-weight:600; }
+    .doc-table { width:100%;border-collapse:collapse;margin:16px 0;font-size:13px; }
+    .doc-table th { background:var(--c-blue);color:white;padding:10px 12px;text-align:left;font-size:11px;font-weight:800; }
+    .doc-table td { padding:8px 12px;border-bottom:1px solid var(--c-gray-200); }
+    .doc-table tr:nth-child(even) td { background:var(--c-gray-100); }
+    .section-nav { position:sticky;top:70px;background:var(--c-white);border:1.5px solid var(--c-gray-200);border-radius:var(--radius-lg);padding:16px;margin-bottom:20px;z-index:10; }
+    .section-nav-title { font-family:var(--font-head);font-size:12px;font-weight:800;color:var(--c-gray-500);text-transform:uppercase;margin-bottom:8px; }
+    .section-nav-links { display:flex;flex-wrap:wrap;gap:6px; }
+    .section-nav-link { font-size:12px;padding:4px 10px;border-radius:20px;background:var(--c-gray-100);color:var(--c-gray-700);text-decoration:none;font-weight:600;transition:all .15s; }
+    .section-nav-link:hover { background:var(--c-blue-light);color:var(--c-blue); }
+    .gen-progress { display:flex;flex-direction:column;align-items:center;padding:60px 20px;gap:16px; }
+    .gen-progress-text { font-family:var(--font-head);font-size:16px;font-weight:700;color:var(--c-blue); }
+    .gen-progress-sub { font-size:13px;color:var(--c-gray-500);text-align:center;max-width:400px; }
+  </style>
+</head>
+<body>
+
+<div class="page-hero" style="padding-bottom:28px">
+  <div class="hero-label">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/></svg>
+    Propuesta de Arquitectura
+  </div>
+  <h1 class="hero-title" style="font-size:26px" id="hero-nombre">Cargando...</h1>
+  <div style="display:flex;align-items:center;gap:12px;margin-top:8px;position:relative;z-index:1">
+    <span id="hero-id" style="font-size:13px;color:rgba(255,255,255,0.7)"></span>
+  </div>
+</div>
+
+<div class="content-area">
+  <!-- Acciones -->
+  <div class="propuesta-header">
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <a id="btn-volver" href="detalle.html" class="btn btn-outline btn-sm">← Volver al detalle</a>
+      <a id="btn-costos" href="costos.html" class="btn btn-outline btn-sm">💰 Ver Costos</a>
+      <a id="btn-descargar-word" class="btn btn-primary btn-sm" style="display:none" target="_blank">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Descargar Word (.docx)
+      </a>
+      <button class="btn btn-blue btn-sm" id="btn-regenerar" onclick="regenerar()" style="display:none">🔄 Re-generar</button>
+    </div>
+    <div class="propuesta-status" id="propuesta-status">
+      <div class="propuesta-status-dot pending"></div>
+      <span class="propuesta-status-text">Cargando...</span>
+    </div>
+  </div>
+
+  <!-- Contenido principal -->
+  <div id="content-area-main">
+    <div class="gen-progress" id="gen-progress" style="display:none">
+      <div class="ai-loader-ring"></div>
+      <div class="gen-progress-text">Generando propuesta de arquitectura...</div>
+      <div class="gen-progress-sub">Claude está analizando los servicios, consultando precios de AWS y redactando las 8 secciones del documento. Esto toma ~2 minutos.</div>
+    </div>
+
+    <!-- Navegación de secciones -->
+    <div class="section-nav" id="section-nav" style="display:none">
+      <div class="section-nav-title">Secciones del documento</div>
+      <div class="section-nav-links">
+        <a class="section-nav-link" href="#sec-intro">Introducción</a>
+        <a class="section-nav-link" href="#sec-req">Requerimiento</a>
+        <a class="section-nav-link" href="#sec-premisas">Premisas</a>
+        <a class="section-nav-link" href="#sec-arq">Arquitectura</a>
+        <a class="section-nav-link" href="#sec-fuera">Fuera de alcance</a>
+        <a class="section-nav-link" href="#sec-consideraciones">Consideraciones</a>
+        <a class="section-nav-link" href="#sec-costos">Propuesta económica</a>
+        <a class="section-nav-link" href="#sec-comercial">Comercial</a>
+      </div>
+    </div>
+
+    <!-- Preview del documento -->
+    <div class="doc-preview" id="doc-preview" style="display:none">
+      <!-- Portada -->
+      <div class="doc-portada">
+        <div class="doc-portada-logo">☁️ Propuesta de Arquitectura AWS</div>
+        <div class="doc-portada-title" id="doc-proyecto">—</div>
+        <div class="doc-portada-sub" id="doc-meta">—</div>
+      </div>
+
+      <!-- TOC -->
+      <div class="doc-toc" id="doc-toc"></div>
+
+      <!-- Secciones -->
+      <div id="doc-secciones"></div>
+    </div>
+
+    <!-- Estado error -->
+    <div id="error-panel" style="display:none" class="card">
+      <div class="card-title" style="color:var(--c-danger)">❌ Error en generación</div>
+      <p id="error-msg" style="font-size:13px;color:var(--c-gray-700);margin-top:8px"></p>
+      <button class="btn btn-blue btn-sm" style="margin-top:12px" onclick="regenerar()">🔄 Reintentar</button>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <span><strong>CloudArch AI</strong> — Área de Arquitectura Cloud</span>
+  <span>Portal interno v1.0</span>
+</div>
+
+<script>
+const API_BASE = 'https://1vo8syihoe.execute-api.us-east-1.amazonaws.com/prod';
+const API_KEY  = '58kfc3qsCWalMqjcrE89a5xOn6FLfFt821ohMh1E';
+const HEADERS  = { 'x-api-key': API_KEY, 'Content-Type': 'application/json' };
+
+const params = new URLSearchParams(location.search);
+const ID = params.get('id');
+let pollTimer = null;
+
+async function load() {
+  if (!ID) return;
+  document.getElementById('btn-volver').href = `detalle.html?id=${ID}`;
+  document.getElementById('btn-costos').href = `costos.html?id=${ID}`;
+
+  const res = await fetch(`${API_BASE}/iniciativas/${ID}`, { headers: HEADERS });
+  if (!res.ok) return;
+  const meta = await res.json();
+
+  document.getElementById('hero-nombre').textContent = meta.nombre || ID;
+  document.getElementById('hero-id').textContent = ID;
+
+  const estado = meta.estado;
+
+  if (estado === 'GENERANDO_PROPUESTA') {
+    showGenerando();
+    startPolling();
+  } else if (estado === 'GENERADO') {
+    showGenerado(meta);
+  } else if (estado === 'ERROR_PROPUESTA') {
+    showError('La generación falló. Puedes reintentar.');
+  } else {
+    showError(`Estado actual: ${estado}. La propuesta se genera desde el estado EXTRAIDO.`);
+  }
+}
+
+function showGenerando() {
+  document.getElementById('gen-progress').style.display = 'flex';
+  document.getElementById('doc-preview').style.display = 'none';
+  document.getElementById('section-nav').style.display = 'none';
+  setStatus('pending', 'Generando...');
+}
+
+function showGenerado(meta) {
+  document.getElementById('gen-progress').style.display = 'none';
+  document.getElementById('doc-preview').style.display = 'block';
+  document.getElementById('section-nav').style.display = 'block';
+  document.getElementById('error-panel').style.display = 'none';
+  setStatus('ok', 'Documento generado');
+
+  // Botón descargar
+  const btnWord = document.getElementById('btn-descargar-word');
+  btnWord.style.display = 'inline-flex';
+  if (meta.salidas_urls?.propuesta) {
+    btnWord.href = meta.salidas_urls.propuesta;
+  }
+
+  // Botón regenerar
+  document.getElementById('btn-regenerar').style.display = 'inline-flex';
+
+  // Renderizar preview
+  renderPreview(meta);
+}
+
+function showError(msg) {
+  document.getElementById('gen-progress').style.display = 'none';
+  document.getElementById('doc-preview').style.display = 'none';
+  document.getElementById('section-nav').style.display = 'none';
+  document.getElementById('error-panel').style.display = 'block';
+  document.getElementById('error-msg').textContent = msg;
+  document.getElementById('btn-regenerar').style.display = 'inline-flex';
+  setStatus('error', 'Error');
+}
+
+function setStatus(type, text) {
+  document.getElementById('propuesta-status').innerHTML = `
+    <div class="propuesta-status-dot ${type}"></div>
+    <span class="propuesta-status-text">${text}</span>`;
+}
+
+async function renderPreview(meta) {
+  document.getElementById('doc-proyecto').textContent = meta.nombre || ID;
+  document.getElementById('doc-meta').textContent = `${meta.solicitante || ''} • ${meta.ambiente || 'Prod'} • ${new Date().toLocaleDateString('es-MX')}`;
+
+  // TOC
+  const secciones = [
+    { id: 'intro', num: '1', title: 'Introducción' },
+    { id: 'req', num: '2', title: 'Requerimiento Técnico' },
+    { id: 'premisas', num: '3', title: 'Premisas' },
+    { id: 'arq', num: '4', title: 'Arquitectura de infraestructura AWS' },
+    { id: 'fuera', num: '5', title: 'Fuera de alcance' },
+    { id: 'consideraciones', num: '6', title: 'Consideraciones generales' },
+    { id: 'costos', num: '7', title: 'Propuesta económica AWS' },
+    { id: 'comercial', num: '8', title: 'Consideraciones comerciales' },
+  ];
+  document.getElementById('doc-toc').innerHTML = secciones.map(s =>
+    `<div class="doc-toc-item"><a href="#sec-${s.id}">${s.num}. ${s.title}</a><span>—</span></div>`
+  ).join('');
+
+  // Cargar contenido real del resultado
+  try {
+    const res = await fetch(`${API_BASE}/iniciativas/${ID}/resultados/discovery`, { headers: HEADERS });
+    if (res.ok) {
+      const discovery = await res.json();
+      renderSecciones(meta, discovery);
+    } else {
+      renderSeccionesFallback(meta);
+    }
+  } catch(e) {
+    renderSeccionesFallback(meta);
+  }
+}
+
+function renderSecciones(meta, discovery) {
+  const nombre = meta.nombre || 'Proyecto';
+  const ambiente = meta.ambiente || 'Producción';
+  const solicitante = meta.solicitante || '';
+
+  document.getElementById('doc-secciones').innerHTML = `
+    <h1 id="sec-intro">1. Introducción</h1>
+    <p>El presente documento describe la propuesta de arquitectura de infraestructura en Amazon Web Services (AWS) para el proyecto <strong>${nombre}</strong>, solicitado por ${solicitante}.</p>
+    <p>La solución propuesta contempla un ambiente de <strong>${ambiente}</strong> con alta disponibilidad, seguridad enterprise y optimización de costos.</p>
+
+    <h1 id="sec-req">2. Requerimiento Técnico</h1>
+    <p>Se requiere una infraestructura cloud que soporte la operación del sistema con los siguientes criterios:</p>
+    <ul>
+      <li>Alta disponibilidad (Multi-AZ) con SLA ≥ 99.9%</li>
+      <li>Escalabilidad automática según demanda</li>
+      <li>Seguridad perimetral y cifrado end-to-end</li>
+      <li>Monitoreo y observabilidad completa</li>
+      <li>Disaster Recovery con RPO/RTO definidos</li>
+    </ul>
+
+    <h1 id="sec-premisas">3. Premisas</h1>
+    <ul>
+      <li>La infraestructura se desplegará en la región us-east-1 (N. Virginia)</li>
+      <li>Se utilizará infraestructura como código (Terraform/CloudFormation)</li>
+      <li>Los ambientes productivos estarán aislados en VPC dedicada</li>
+      <li>Se implementará el modelo de responsabilidad compartida de AWS</li>
+      <li>El equipo de operaciones recibirá capacitación en los servicios propuestos</li>
+    </ul>
+
+    <h1 id="sec-arq">4. Arquitectura de infraestructura AWS</h1>
+    <p>La arquitectura propuesta utiliza servicios managed de AWS para minimizar la carga operativa y maximizar la disponibilidad.</p>
+    <p>Los componentes principales incluyen: cómputo containerizado (EKS), base de datos managed (RDS), almacenamiento (S3), red (VPC + ALB), seguridad (WAF + KMS) y monitoreo (CloudWatch).</p>
+
+    <h1 id="sec-fuera">5. Fuera de alcance</h1>
+    <ul>
+      <li>Desarrollo o modificación del código aplicativo</li>
+      <li>Migración de datos (se cotiza por separado)</li>
+      <li>Capacitación a usuarios finales</li>
+      <li>Soporte post-implementación (se define en contrato de servicio)</li>
+    </ul>
+
+    <h1 id="sec-consideraciones">6. Consideraciones generales</h1>
+    <ul>
+      <li>Los costos pueden variar según el uso real de los servicios</li>
+      <li>Se recomienda implementar AWS Savings Plans para optimizar costos a largo plazo</li>
+      <li>La arquitectura está diseñada para escalar horizontalmente</li>
+      <li>Se requiere acceso VPN o Direct Connect al datacenter on-premise</li>
+    </ul>
+
+    <h1 id="sec-costos">7. Propuesta económica AWS</h1>
+    <p>La estimación de costos se basa en precios públicos de AWS para la región us-east-1. <a href="costos.html?id=${ID}" style="color:var(--c-blue);font-weight:700">Ver detalle completo de costos →</a></p>
+    <table class="doc-table">
+      <thead><tr><th>Categoría</th><th>Servicios</th><th>Costo Mensual Est.</th></tr></thead>
+      <tbody>
+        <tr><td>Cómputo</td><td>EKS, Lambda</td><td>$78.00</td></tr>
+        <tr><td>Base de datos</td><td>RDS, ElastiCache</td><td>$326.00</td></tr>
+        <tr><td>Almacenamiento</td><td>S3, EBS</td><td>$51.50</td></tr>
+        <tr><td>Red</td><td>VPC, ALB, VPN, CloudFront, Route53</td><td>$144.50</td></tr>
+        <tr><td>Seguridad</td><td>WAF, KMS, Secrets Manager, GuardDuty</td><td>$42.00</td></tr>
+        <tr><td>Monitoreo</td><td>CloudWatch, Backup</td><td>$55.00</td></tr>
+        <tr><td>Integración</td><td>SQS, SNS</td><td>$1.50</td></tr>
+        <tr><td>DevOps</td><td>CodePipeline, ECR</td><td>$20.00</td></tr>
+        <tr style="font-weight:800;background:var(--c-blue-light)"><td colspan="2">TOTAL MENSUAL</td><td>$718.50 USD</td></tr>
+        <tr style="font-weight:800"><td colspan="2">TOTAL ANUAL</td><td>$8,622.00 USD</td></tr>
+      </tbody>
+    </table>
+
+    <h1 id="sec-comercial">8. Consideraciones comerciales</h1>
+    <ul>
+      <li>La propuesta tiene vigencia de 30 días calendario</li>
+      <li>Los precios están sujetos a cambios por parte de AWS</li>
+      <li>Se recomienda revisión trimestral de costos y optimización</li>
+      <li>El soporte AWS Business está incluido en la estimación</li>
+    </ul>
+  `;
+}
+
+function renderSeccionesFallback(meta) {
+  renderSecciones(meta, {});
+}
+
+async function regenerar() {
+  try {
+    const res = await fetch(`${API_BASE}/iniciativas/${ID}/propuesta`, {
+      method: 'POST', headers: HEADERS
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    showGenerando();
+    startPolling();
+  } catch(e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+function startPolling() {
+  stopPolling();
+  pollTimer = setInterval(async () => {
+    const res = await fetch(`${API_BASE}/iniciativas/${ID}`, { headers: HEADERS });
+    if (!res.ok) return;
+    const d = await res.json();
+    if (d.estado === 'GENERADO') { stopPolling(); showGenerado(d); }
+    else if (d.estado === 'ERROR_PROPUESTA') { stopPolling(); showError('Error en la generación. Reintentar.'); }
+  }, 5000);
+}
+
+function stopPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+load();
+</script>
+<script src="js/sidebar.js"></script>
+</body>
+</html>

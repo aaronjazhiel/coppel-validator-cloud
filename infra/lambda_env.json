@@ -1,0 +1,10 @@
+{
+  "Variables": {
+    "BUCKET_NAME": "coppel-cloud-iniciativas",
+    "DB_HOST": "coppel-cloud-prod-postgres.cirege8e8twb.us-east-1.rds.amazonaws.com",
+    "DB_PORT": "5432",
+    "DB_NAME": "coppel_cloud",
+    "DB_USER": "coppel_admin",
+    "DB_PASSWORD": "0eL!}o!Au6Y?Z9!m}ANP()KR"
+  }
+}

@@ -1,0 +1,95 @@
+TRANSCRIPCIÓN — Sesión Técnica #2: Definición de Arquitectura
+Fecha: 2026-06-25
+Participantes: María González (Arquitecta Cloud), Pedro Martínez (TI), Ana López (Seguridad), Roberto Sánchez (DBA)
+Duración: 60 min
+
+---
+
+[María González]: Hoy vamos a definir el sizing y la arquitectura detallada. Roberto, empecemos con la base de datos.
+
+[Roberto Sánchez]: OK. La base actual tiene 2.3 TB, con 450 tablas. Las más grandes son la tabla de transacciones (800GB) y la de históricos (1.2TB). El pico de queries concurrentes es de 3,000 durante cierre de mes.
+
+[María González]: ¿Qué tipo de queries son? ¿OLTP o analíticas?
+
+[Roberto Sánchez]: Mixto. Durante el día es OLTP puro — inserts de las tiendas, consultas puntuales. Pero en cierre de mes se ejecutan queries analíticas pesadas que hacen JOINs de 5-6 tablas con agregaciones.
+
+[María González]: Para ese volumen y ese patrón, recomiendo RDS PostgreSQL con instancia db.r6g.2xlarge — 8 vCPU, 64GB RAM. Multi-AZ obligatorio por el RTO de 30 minutos. Storage gp3 de 3TB con IOPS provisionados de 10,000.
+
+[Roberto Sánchez]: ¿Y para las queries analíticas pesadas?
+
+[María González]: Podemos agregar una réplica de lectura para las consultas de reportes. Así no impactamos la producción. La réplica puede ser db.r6g.xlarge — más chica porque solo lee.
+
+[Pedro Martínez]: Para el servidor de aplicación, actualmente tenemos 4 vCPU y 12GB. ¿Qué instancia recomiendas?
+
+[María González]: m6i.xlarge — 4 vCPU, 16GB RAM. Nos da un poco más de memoria para el heap de Java. ¿Cuántas instancias necesitan?
+
+[Pedro Martínez]: Actualmente es una sola, pero si queremos HA necesitamos mínimo 2.
+
+[María González]: Correcto. 2 instancias m6i.xlarge detrás de un ALB. Auto Scaling Group con mínimo 2, máximo 4 para los picos de cierre de mes.
+
+[Ana López]: ¿Cómo queda la seguridad de red?
+
+[María González]: VPC dedicada con 3 AZs. Subnets privadas para EC2 y RDS — nunca expuestos a internet. Subnet pública solo para el ALB. NAT Gateway para que las instancias privadas puedan salir a internet (actualizaciones, etc).
+
+[Ana López]: ¿Y el acceso desde las tiendas?
+
+[María González]: Las tiendas se conectan vía Transit Gateway que ya está configurado corporativamente. El portal de gerentes pasa por el ALB público con WAF adelante.
+
+[Ana López]: Necesito que el WAF tenga las reglas de OWASP Top 10 y rate limiting. También necesitamos que todo el tráfico entre componentes vaya cifrado con TLS 1.2 mínimo.
+
+[María González]: Sí, el ALB termina TLS con certificado de ACM. Entre ALB y EC2 también va cifrado. RDS tiene encryption at rest con KMS y enforce SSL para conexiones.
+
+[Pedro Martínez]: ¿Qué pasa con el servidor Windows del frontend?
+
+[María González]: Una instancia m6i.large con Windows Server 2019 — 2 vCPU, 8GB RAM. Aunque honestamente, el frontend Angular podría servirse desde S3 + CloudFront y eliminar ese servidor. Pero para Lift & Shift lo dejamos como está.
+
+[Pedro Martínez]: Sí, mejor primero migramos y después optimizamos.
+
+[Roberto Sánchez]: ¿Cómo manejamos los backups?
+
+[María González]: AWS Backup con política:
+- RDS: snapshots automáticos cada 12 horas, retención 30 días
+- EC2/EBS: backup diario, retención 15 días
+- Punto de recuperación antes de cada cierre de mes (manual)
+
+[Roberto Sánchez]: ¿Y para el proceso batch de consolidación? Necesitamos que corra sin afectar producción.
+
+[María González]: Lo corremos en la réplica de lectura. Si necesita escribir resultados, que escriba a tablas temporales en la primaria fuera de horario pico. También podemos escalar la instancia temporalmente durante el batch — RDS permite cambiar el tipo de instancia con un reinicio de ~30 segundos.
+
+[Ana López]: Una cosa más: necesitamos logs centralizados. Todos los access logs del ALB, VPC Flow Logs, y los logs de aplicación deben ir a CloudWatch Logs con retención de 90 días.
+
+[María González]: Perfecto. Agrego CloudWatch Logs con log groups separados por componente. También configuro alarmas para:
+- CPU > 80% en EC2 por más de 5 minutos
+- Conexiones a RDS > 80% del máximo
+- Errores 5xx en ALB > 10 por minuto
+- Storage de RDS > 85%
+
+[Pedro Martínez]: ¿Cuánto va a costar todo esto mensualmente?
+
+[María González]: Déjame hacer el cálculo rápido:
+- 2x EC2 m6i.xlarge (Linux): ~$280/mes
+- 1x EC2 m6i.large (Windows): ~$140/mes
+- RDS Multi-AZ db.r6g.2xlarge + 3TB: ~$1,800/mes
+- RDS Read Replica db.r6g.xlarge: ~$450/mes
+- ALB + NAT Gateway: ~$180/mes
+- S3 + Backups: ~$100/mes
+- CloudWatch + WAF + KMS: ~$80/mes
+Total estimado: ~$3,030 USD/mes
+
+[Pedro Martínez]: Está dentro del presupuesto de $15,000. Bien.
+
+[María González]: Sí, y eso es On-Demand. Con Reserved Instances de 1 año podemos bajar un 30-40%.
+
+[Ana López]: ¿Cuándo migramos?
+
+[María González]: Propongo usar AWS DMS para la base de datos — migración con mínimo downtime. Para los servidores, AWS Application Migration Service. El plan sería:
+1. Semana 1-2: Preparar infraestructura (Terraform)
+2. Semana 3: Migrar base de datos con DMS
+3. Semana 4: Migrar servidores de aplicación
+4. Semana 5: Testing y validación
+5. Semana 6: Cutover a producción
+
+[Carlos Ruiz]: Perfecto. Procedan.
+
+---
+FIN DE TRANSCRIPCIÓN

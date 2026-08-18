@@ -1,0 +1,9 @@
+agentajdg_accessKeys.csv
+infra/terraform.tfstate
+infra/terraform.tfstate.backup
+.vscode/
+infra/.terraform/
+backend/lambda.zip
+backend/layer.zip
+backend/layer 2.zip
+documentation/prompts/tokenclaude.txt

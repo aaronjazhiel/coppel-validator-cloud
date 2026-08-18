@@ -1,0 +1,72 @@
+graph TB
+    %% ── Cliente ──────────────────────────────────────────
+    subgraph Cliente["Cliente"]
+        PORTAL["Portal Web - S3 Static Website"]
+        SWAGGER["Swagger UI - /docs"]
+    end
+
+    %% ── API Layer ────────────────────────────────────────
+    subgraph API["API Gateway REST"]
+        APIGW["API Gateway\nx-api-key auth\nCORS habilitado"]
+    end
+
+    %% ── Compute ──────────────────────────────────────────
+    subgraph Lambdas["Lambda Functions - Python 3.12"]
+        L_CREAR["crear_iniciativa\n256MB / 30s"]
+        L_LISTAR["listar_iniciativas\n256MB / 30s"]
+        L_FICHA["ficha\n256MB / 30s"]
+        L_PROCESAR["procesar_iniciativa\n1024MB / 900s"]
+        L_GENERAR["generar_salidas\n1024MB / 900s"]
+        L_REGISTRAR["registrar_insumo\n256MB / 30s"]
+    end
+
+    %% ── Storage ──────────────────────────────────────────
+    subgraph Storage["Almacenamiento"]
+        S3_INI["S3: coppel-cloud-iniciativas\nKMS Encrypted / Versionado"]
+        DYNAMO["DynamoDB: Iniciativas\nSingle-Table / PAY_PER_REQUEST\nGSI1 por estado"]
+    end
+
+    %% ── AI ───────────────────────────────────────────────
+    subgraph AI["Inteligencia Artificial"]
+        CLAUDE["Anthropic Claude\nclaude-sonnet-4-20250514"]
+        SECRETS["Secrets Manager\nanthropic-api-key"]
+    end
+
+    %% ── Flujo Principal ──────────────────────────────────
+    PORTAL -->|"HTTPS + x-api-key"| APIGW
+    SWAGGER -->|"HTTPS + x-api-key"| APIGW
+
+    APIGW -->|"POST /iniciativas"| L_CREAR
+    APIGW -->|"GET /iniciativas"| L_LISTAR
+    APIGW -->|"GET/PUT /ficha"| L_FICHA
+    APIGW -->|"POST /procesar"| L_PROCESAR
+    APIGW -->|"POST /generar"| L_GENERAR
+
+    %% ── S3 Trigger ──────────────────────────────────────
+    S3_INI -->|"S3 ObjectCreated trigger"| L_REGISTRAR
+
+    %% ── Lambda a Storage ─────────────────────────────────
+    L_CREAR --> S3_INI
+    L_CREAR --> DYNAMO
+    L_LISTAR --> DYNAMO
+    L_LISTAR --> S3_INI
+    L_FICHA --> S3_INI
+    L_FICHA --> DYNAMO
+    L_PROCESAR --> S3_INI
+    L_PROCESAR --> DYNAMO
+    L_PROCESAR --> CLAUDE
+    L_GENERAR --> S3_INI
+    L_GENERAR --> DYNAMO
+    L_GENERAR --> CLAUDE
+    L_REGISTRAR --> DYNAMO
+
+    %% ── AI Auth ──────────────────────────────────────────
+    L_PROCESAR --> SECRETS
+    L_GENERAR --> SECRETS
+
+    %% ── Async Self-Invoke ────────────────────────────────
+    L_PROCESAR -.->|"async self-invoke"| L_PROCESAR
+    L_GENERAR -.->|"async self-invoke"| L_GENERAR
+
+    %% ── Upload directo ───────────────────────────────────
+    PORTAL -->|"PUT presigned URL"| S3_INI

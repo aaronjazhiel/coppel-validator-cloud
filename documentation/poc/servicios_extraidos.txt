@@ -1,0 +1,12 @@
+Servicios identificados: 24
+---
+  Amazon EKS                     | COMPUTO              | REQUERIDO
+  AWS Lambda                     | COMPUTO              | REQUERIDO
+  Amazon RDS (motor a definir)   | BASE_DE_DATOS        | REQUERIDO
+  Amazon S3                      | ALMACENAMIENTO       | REQUERIDO
+  Amazon EBS                     | ALMACENAMIENTO       | REQUERIDO
+  Amazon VPC                     | RED_Y_CONECTIVIDAD   | REQUERIDO
+  Application Load Balancer (Internet-facing) | RED_Y_CONECTIVIDAD   | REQUERIDO
+  Application Load Balancer (Internal) | RED_Y_CONECTIVIDAD   | REQUERIDO
+  AWS Site-to-Site VPN / Direct Connect | RED_Y_CONECTIVIDAD   | REQUERIDO
+  Amazon API Gateway             | RED_Y_CONECTIVIDAD   | RECOMENDADO

@@ -1,0 +1,119 @@
+@startuml
+title Flujo de Validación y Generación de Propuesta - CloudArch AI
+
+skinparam backgroundColor #FEFEFE
+skinparam sequenceArrowThickness 2
+skinparam participantPadding 20
+skinparam boxPadding 10
+
+actor "Arquitecto\nCloud" as User
+participant "Portal Web\n(S3 Static)" as Portal
+participant "API Gateway\n(REST)" as APIGW
+participant "Lambda\ncrear_iniciativa" as LCreate
+participant "S3\ncoppel-cloud-iniciativas" as S3
+participant "Lambda\nregistrar_insumo" as LReg
+participant "PostgreSQL\nRDS" as DB
+participant "Lambda\nvalidar_iniciativa" as LVal
+participant "Lambda\nvalidar_worker" as LValW
+participant "Claude\n(Anthropic API)" as Claude
+participant "Lambda\ngenerar_propuesta" as LProp
+participant "Lambda\npropuesta_worker" as LPropW
+participant "AWS Pricing\n(Bulk API)" as Pricing
+
+== 1. INGESTA ==
+
+User -> Portal : Llena formulario + sube .docx
+Portal -> APIGW : POST /iniciativas\n{nombre, solicitante, archivos}
+APIGW -> LCreate : Proxy Lambda
+LCreate -> DB : INSERT iniciativa\nestado = INGESTA
+LCreate -> S3 : Genera presigned URLs\npara upload
+LCreate --> Portal : 201 {id, upload_urls}
+Portal -> S3 : PUT archivo .docx\n(Presigned URL - Signature V4)
+S3 -> LReg : S3 Event Trigger\n(ObjectCreated)
+LReg -> DB : UPDATE insumos[]\n{key, tipo, subido_en}
+
+== 2. VALIDACIÓN (Paso 1) ==
+
+User -> Portal : Click "Volver a validar"
+Portal -> APIGW : POST /iniciativas/{id}/validar\n{etapa: "validar_discovery"}
+APIGW -> LVal : Proxy Lambda
+LVal -> DB : UPDATE estado = VALIDANDO
+LVal -> LValW : Invoke Async (Event)
+LVal --> Portal : 202 {message, estado}
+
+note over Portal : Muestra overlay\n⚙️ engrane girando\n+ contador de tiempo
+
+Portal -> APIGW : Poll GET /iniciativas/{id}\n(cada 4s)
+
+LValW -> S3 : Lee prompts/validar_combinado.md
+LValW -> S3 : Lee .docx del insumo\n(extrae texto)
+LValW -> Claude : POST /v1/messages\n\nsystem: "Eres arquitecto cloud senior\nde Coppel. Responde ÚNICAMENTE\ncon JSON válido."\n\nprompt: {DISCOVERY} + {TRANSCRIPCIONES}\n\n→ Evalúa 8 secciones:\n  metadata, requisitos, datos,\n  dependencias, entorno_red,\n  migración, infraestructura, dr
+Claude --> LValW : JSON con puntaje_total,\nsecciones[].puntaje,\nsecciones[].campos[],\nhuecos_criticos[]
+LValW -> S3 : PUT validacion_discovery.json
+LValW -> DB : UPDATE estado = DISCOVERY_OK\ncompletitud = 84%
+
+Portal -> APIGW : Poll detecta estado ≠ VALIDANDO
+Portal -> Portal : Reload → muestra score
+
+== 3. EXTRACCIÓN DE SERVICIOS (Paso 2) ==
+
+User -> Portal : Click "Siguiente: Servicios"
+note over Portal : Si no hay servicios_aws.json,\nmuestra fallback demo
+
+Portal -> APIGW : POST /iniciativas/{id}/validar\n{etapa: "extraer_servicios"}
+APIGW -> LVal : Proxy Lambda
+LVal -> LValW : Invoke Async (Event)
+
+LValW -> S3 : Lee prompts/extraer_servicios.md
+LValW -> S3 : Lee validacion_discovery.json
+LValW -> Claude : POST /v1/messages\n\nsystem: "Eres arquitecto cloud senior..."\n\nprompt: Basado en el discovery validado,\nextraer servicios AWS necesarios\ncon categoría, prioridad y justificación
+Claude --> LValW : JSON {servicios: [\n  {servicio, categoria,\n   prioridad, justificacion}\n]}
+LValW -> S3 : PUT servicios_aws.json
+LValW -> DB : UPDATE estado = EXTRAIDO
+
+== 4. GENERACIÓN DE PROPUESTA (Paso 4) ==
+
+User -> Portal : Click "Generar Propuesta Word"
+Portal -> APIGW : POST /iniciativas/{id}/propuesta
+APIGW -> LProp : Proxy Lambda
+LProp -> DB : UPDATE estado = GENERANDO_PROPUESTA
+LProp -> LPropW : Invoke Async (Event)
+LProp --> Portal : 202 {message}
+
+note over Portal : Muestra spinner\n"Generando propuesta..."
+
+LPropW -> S3 : Lee servicios_aws.json
+LPropW -> S3 : Lee validacion_discovery.json
+LPropW -> S3 : Lee .docx transcripciones (si hay)
+
+note over LPropW, Claude : === Llamada 1: Estimación de Costos ===
+
+LPropW -> Claude : POST /v1/messages\n\nsystem: "Eres agente de pricing AWS"\n\nprompt: Para cada servicio,\nestima costo mensual USD\n\nTools disponibles:\n  - get_aws_price(service_code, filters)
+Claude -> Pricing : get_aws_price("AmazonEKS")\nget_aws_price("AmazonRDS")\nget_aws_price("AmazonS3")\n... (por cada servicio)
+Pricing --> Claude : Precios unitarios reales
+Claude --> LPropW : JSON {servicios_cotizados[],\ntotal_mensual_usd,\ntotal_anual_usd,\nsupuestos[],\nrecomendaciones_ahorro[]}
+
+note over LPropW, Claude : === Llamada 2: Contenido del Documento ===
+
+LPropW -> S3 : Lee prompts/generar_propuesta.md
+LPropW -> Claude : POST /v1/messages\n\nsystem: "Eres arquitecto cloud senior..."\n\nprompt: Genera 8 secciones:\n  1. Introducción\n  2. Requerimiento Técnico\n  3. Premisas\n  4. Arquitectura AWS\n  5. Fuera de alcance\n  6. Consideraciones generales\n  7. Propuesta económica\n  8. Consideraciones comerciales\n\nContexto: {DISCOVERY}\n+ {SERVICIOS} + {COSTOS}
+Claude --> LPropW : JSON {proyecto{},\nsecciones{introduccion,\nrequerimiento_tecnico,\npremisas[], arquitectura_aws,\nfuera_de_alcance[],\nconsideraciones_generales[],\nconsideraciones_comerciales[]}}
+
+LPropW -> S3 : Lee plantilla Word (.docx)
+LPropW -> LPropW : Genera documento Word\ncon python-docx\n(8 secciones + tabla costos)
+LPropW -> S3 : PUT propuesta_arquitectura.docx
+LPropW -> S3 : PUT costos_estimados.json
+LPropW -> DB : UPDATE estado = GENERADO\nsalidas.propuesta = key
+
+Portal -> APIGW : Poll detecta estado = GENERADO
+Portal -> Portal : Muestra botón\n"Descargar Propuesta Word"
+
+== 5. DESCARGA ==
+
+User -> Portal : Click "Descargar Word"
+Portal -> APIGW : GET /iniciativas/{id}
+APIGW -> LCreate : Retorna salidas_urls\n(presigned GET)
+Portal -> S3 : GET presigned URL
+S3 --> User : propuesta_arquitectura.docx\n(~340 KB, 8 secciones)
+
+@enduml

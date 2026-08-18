@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Coppel Cloud Validator — API Docs</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
+  <style>
+    body { margin: 0; background: #fafafa; font-family: sans-serif; }
+    .topbar { display: none !important; }
+
+    #test-panel {
+      background: #1a1a2e;
+      color: #e0e0e0;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      border-bottom: 3px solid #e74c3c;
+    }
+    #test-panel h3 { margin: 0; color: #f39c12; font-size: 14px; letter-spacing: 1px; text-transform: uppercase; }
+    #test-panel select, #test-panel input {
+      background: #2c2c54;
+      color: #fff;
+      border: 1px solid #444;
+      border-radius: 4px;
+      padding: 6px 10px;
+      font-size: 13px;
+    }
+    #test-panel button {
+      background: #e74c3c;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 7px 16px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: bold;
+    }
+    #test-panel button:hover { background: #c0392b; }
+    #test-panel .hint { font-size: 11px; color: #aaa; }
+    #copy-btn { background: #27ae60 !important; }
+    #copy-btn:hover { background: #1e8449 !important; }
+  </style>
+</head>
+<body>
+
+  <!-- ── Panel de datos de prueba ── -->
+  <div id="test-panel">
+    <h3>🧪 Datos de prueba</h3>
+
+    <div>
+      <label style="font-size:12px;color:#aaa">Iniciativa</label><br>
+      <select id="preset-select" onchange="applyPreset()">
+        <option value="ini001">INI-2025-001 — Migración Constancias</option>
+        <option value="ini002">INI-2025-002 — Portal Afore</option>
+        <option value="ini003">INI-2025-003 — API Pagos Multi-cloud</option>
+      </select>
+    </div>
+
+    <div>
+      <label style="font-size:12px;color:#aaa">ID manual</label><br>
+      <input id="custom-id" type="text" placeholder="INI-2025-XXX" style="width:160px">
+    </div>
+
+    <button onclick="copyPayload()">📋 Copiar JSON</button>
+    <button id="copy-btn" onclick="copyId()">🔑 Copiar ID</button>
+
+    <span class="hint">Pega el JSON en el body de POST /iniciativas<br>y el ID en los path params de los demás endpoints</span>
+  </div>
+
+  <div id="swagger-ui"></div>
+
+  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+  <script>
+    const PRESETS = {
+      ini001: {
+        payload: {
+          id_iniciativa: "INI-2025-001",
+          nombre: "Migración Constancias Retención",
+          ambiente: "Prod",
+          solicitante: "Juan Pérez",
+          descripcion: "Migración del sistema de constancias fiscales a AWS con alta disponibilidad",
+          nube: "AWS",
+          business_tags: { project: "AforeCoppel", owner: "Arquitectura Cloud", cost_center: "CC-4521" },
+          archivos: {
+            discovery: ["quick_discovery.docx"],
+            diagrama: ["arquitectura_as_is.drawio.xml"],
+            transcripciones: ["sesion_kickoff.txt"],
+            componentes: ["inventario_componentes.xlsx"]
+          }
+        }
+      },
+      ini002: {
+        payload: {
+          id_iniciativa: "INI-2025-002",
+          nombre: "Portal Afore — Modernización Frontend",
+          ambiente: "QA",
+          solicitante: "María González",
+          descripcion: "Modernización del portal web de Afore con React y CloudFront",
+          nube: "AWS",
+          business_tags: { project: "PortalAfore", owner: "Digital", cost_center: "CC-3310" },
+          archivos: {
+            discovery: ["discovery_portal.docx"],
+            diagrama: ["flujo_usuario.drawio.xml"],
+            transcripciones: ["workshop_ux.txt"],
+            componentes: ["stack_tecnologico.xlsx"]
+          }
+        }
+      },
+      ini003: {
+        payload: {
+          id_iniciativa: "INI-2025-003",
+          nombre: "API Pagos Multi-cloud",
+          ambiente: "Dev",
+          solicitante: "Carlos Ruiz",
+          descripcion: "API de pagos con resiliencia multi-cloud AWS + GCP",
+          nube: "Multi",
+          business_tags: { project: "Pagos", owner: "Plataforma", cost_center: "CC-7890" },
+          archivos: {
+            discovery: ["reqs_pagos.docx"],
+            diagrama: ["topologia_multicloud.drawio.xml"],
+            transcripciones: ["entrevista_negocio.txt"],
+            componentes: ["servicios_actuales.xlsx"]
+          }
+        }
+      }
+    };
+
+    let currentPreset = "ini001";
+
+    function applyPreset() {
+      currentPreset = document.getElementById("preset-select").value;
+      document.getElementById("custom-id").value = "";
+    }
+
+    function getActiveId() {
+      return document.getElementById("custom-id").value.trim()
+        || PRESETS[currentPreset].payload.id_iniciativa;
+    }
+
+    function getActivePayload() {
+      const customId = document.getElementById("custom-id").value.trim();
+      const base = JSON.parse(JSON.stringify(PRESETS[currentPreset].payload));
+      if (customId) base.id_iniciativa = customId;
+      return base;
+    }
+
+    function copyPayload() {
+      navigator.clipboard.writeText(JSON.stringify(getActivePayload(), null, 2))
+        .then(() => flash("📋 Copiar JSON", "✅ Copiado!"));
+    }
+
+    function copyId() {
+      navigator.clipboard.writeText(getActiveId())
+        .then(() => flash("🔑 Copiar ID", "✅ ID copiado!", "copy-btn"));
+    }
+
+    function flash(original, msg, btnId = null) {
+      const btns = document.querySelectorAll("#test-panel button");
+      btns.forEach(b => { if (b.textContent === original || b.id === btnId) {
+        const prev = b.textContent;
+        b.textContent = msg;
+        setTimeout(() => b.textContent = prev, 1500);
+      }});
+    }
+
+    SwaggerUIBundle({
+      url: "./swagger.json",
+      dom_id: "#swagger-ui",
+      presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
+      layout: "BaseLayout",
+      tryItOutEnabled: true,
+      persistAuthorization: true,
+      requestSnippetsEnabled: true,
+    });
+  </script>
+</body>
+</html>

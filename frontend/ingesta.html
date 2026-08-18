@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ingesta de Iniciativas — CloudArch AI</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    /* ── Ingesta-specific styles ─────────────────────────── */
+    .ingesta-form { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .ingesta-form .full { grid-column: 1 / -1; }
+    .drop-zone {
+      border: 2.5px dashed var(--c-gray-300);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--c-gray-100);
+      position: relative;
+    }
+    .drop-zone:hover, .drop-zone.drag-over {
+      border-color: var(--c-blue);
+      background: var(--c-blue-light);
+    }
+    .drop-zone-title {
+      font-family: var(--font-head);
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--c-blue);
+      margin-bottom: 4px;
+    }
+    /* Acordeón */
+    .accordion-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+    .accordion-toggle .chevron {
+      transition: transform 0.2s;
+      width: 20px; height: 20px;
+      color: var(--c-gray-500);
+    }
+    .accordion-toggle.open .chevron { transform: rotate(180deg); }
+    .accordion-body {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease;
+    }
+    .accordion-body.open {
+      max-height: 2000px;
+    }
+    .drop-zone-hint { font-size: 12px; color: var(--c-gray-500); }
+    .drop-zone input[type=file] {
+      position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+    }
+    .file-list { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+    .file-list-item {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; color: var(--c-gray-700); padding: 4px 8px;
+      background: var(--c-blue-light); border-radius: 4px;
+    }
+    .file-list-item .remove {
+      margin-left: auto; cursor: pointer; color: var(--c-danger);
+      font-weight: 700; font-size: 14px;
+    }
+    .progress-wrap { margin-top: 8px; }
+    .progress-item {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 12px; margin-bottom: 6px;
+    }
+    .progress-item .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .progress-item .bar { flex: 2; height: 6px; background: var(--c-gray-200); border-radius: 3px; overflow: hidden; }
+    .progress-item .bar-fill { height: 100%; background: var(--c-blue); border-radius: 3px; transition: width 0.3s; }
+    .progress-item .pct { width: 40px; text-align: right; font-weight: 700; font-family: var(--font-head); }
+    .status-badge {
+      display: inline-flex; padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 700; font-family: var(--font-head);
+    }
+    .status-INGESTA { background: var(--c-info-bg); color: var(--c-info); }
+    .status-PROCESANDO { background: var(--c-warn-bg); color: var(--c-warn); }
+    .status-EXTRAIDO { background: var(--c-success-bg); color: var(--c-success); }
+    .status-EN_REVISION { background: var(--c-warn-bg); color: var(--c-warn); }
+    .status-VALIDADO { background: var(--c-success-bg); color: var(--c-success); }
+    .status-GENERADO { background: #E8F5E9; color: #2E7D32; }
+    .status-ERROR { background: var(--c-danger-bg); color: var(--c-danger); }
+    .tab-bar { display: flex; gap: 2px; margin-bottom: 24px; border-bottom: 2px solid var(--c-gray-200); }
+    .tab-btn {
+      padding: 10px 20px; font-family: var(--font-head); font-weight: 700; font-size: 14px;
+      color: var(--c-gray-500); border: none; background: none; cursor: pointer;
+      border-bottom: 3px solid transparent; margin-bottom: -2px; transition: all 0.15s;
+    }
+    .tab-btn.active { color: var(--c-blue); border-bottom-color: var(--c-yellow); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .ini-table { width: 100%; }
+    .ini-table td { padding: 10px 12px; }
+    .ini-table tr:hover { background: var(--c-blue-light); cursor: pointer; }
+    .completitud-bar {
+      width: 60px; height: 6px; background: var(--c-gray-200);
+      border-radius: 3px; overflow: hidden; display: inline-block; vertical-align: middle;
+    }
+    .completitud-fill { height: 100%; background: var(--c-blue); border-radius: 3px; }
+    @keyframes slideIn { from { opacity:0; transform:translateX(40px); } to { opacity:1; transform:translateX(0); } }
+    @keyframes fadeOut { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(40px); } }
+  </style>
+</head>
+<body>
+<div style="padding:28px 28px 0">
+  <h1 style="font-family:var(--font-head);font-size:22px;font-weight:900;color:var(--c-gray-700);margin-bottom:4px">📥 Ingesta de Iniciativas</h1>
+  <p style="font-size:13px;color:var(--c-gray-500);margin-bottom:24px">Crea una iniciativa, sube los insumos y lanza el procesamiento con IA.</p>
+</div>
+
+<!-- ── CONTENT ─────────────────────────────────────────────── -->
+<div class="content-area">
+
+
+
+  <div id="tab-nueva">
+    <div id="ingesta-alerts"></div>
+
+    <!-- Metadata Form (Acordeón) -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="accordion-toggle open" onclick="toggleAccordion(this)">
+        <div>
+          <div class="card-title">📋 Datos de la Iniciativa</div>
+          <div class="card-sub" style="margin-bottom:0">Todos los campos marcados con * son obligatorios.</div>
+        </div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="accordion-body open">
+        <div class="ingesta-form" style="margin-top:16px">
+          <div style="display:none"><input id="f-id"></div>
+          <div class="form-group">
+            <label class="form-label">Nombre del Proyecto *</label>
+            <input class="form-input" id="f-nombre" placeholder="Ej: Modernización y Migración de Ecosistema PHP">
+          </div>
+          <div class="form-group full">
+            <label class="form-label">Objetivo del Proyecto</label>
+            <textarea class="form-input" id="f-objetivo" rows="3" placeholder="Descripción del objetivo del proyecto"></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Solicitante *</label>
+            <input class="form-input" id="f-solicitante" placeholder="Nombre del solicitante">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Líder del Proyecto</label>
+            <input class="form-input" id="f-lider" placeholder="Nombre del líder">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Business Tags (Acordeón colapsado por defecto) -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="accordion-toggle" onclick="toggleAccordion(this)">
+        <div>
+          <div class="card-title">🏷️ Business Tags</div>
+          <div class="card-sub" style="margin-bottom:0">Información organizacional y de presupuesto. Deja vacío si no aplica.</div>
+        </div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="accordion-body">
+        <div class="ingesta-form" style="margin-top:16px">
+        <div class="form-group">
+          <label class="form-label">Project</label>
+          <input class="form-input" id="bt-project" placeholder="Ej: Menú Operaciones Afore">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Owner</label>
+          <input class="form-input" id="bt-owner" placeholder="Responsable del proyecto">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cost Center</label>
+          <input class="form-input" id="bt-cost-center" placeholder="Centro de costos">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Business Unit</label>
+          <input class="form-input" id="bt-business-unit" placeholder="Ej: Dirección de Operaciones y Servicio AFORE">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Arquitecto SSFF/Retail</label>
+          <input class="form-input" id="bt-arquitecto" placeholder="Nombre del arquitecto">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Unidad de Negocio</label>
+          <input class="form-input" id="bt-unidad-negocio" placeholder="Ej: Afore">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Área de Negocio</label>
+          <input class="form-input" id="bt-area-negocio" placeholder="Ej: BackOffice">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Macro Servicio</label>
+          <input class="form-input" id="bt-macro-servicio" placeholder="Ej: Menú Operaciones Afore">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Servicio</label>
+          <input class="form-input" id="bt-servicio" placeholder="Nombre del servicio">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sistema / Aplicación</label>
+          <input class="form-input" id="bt-sistema" placeholder="Nombre del sistema">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Responsable de Negocio</label>
+          <input class="form-input" id="bt-resp-negocio" placeholder="Nombre">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Responsable de TI</label>
+          <input class="form-input" id="bt-resp-ti" placeholder="Nombre">
+        </div>
+        <div class="form-group">
+          <label class="form-label">ID de Presupuesto</label>
+          <input class="form-input" id="bt-id-presupuesto" placeholder="Ej: Presupuesto Afore">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Número de Centro de Gasto</label>
+          <input class="form-input" id="bt-num-centro" placeholder="Ej: 234190">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nombre de Centro de Gasto</label>
+          <input class="form-input" id="bt-nombre-centro" placeholder="Ej: 06 DESARROLLO DE SOLS TI AFORE">
+        </div>
+        <div class="form-group">
+          <label class="form-label"># Iniciativa a la que pertenece</label>
+          <input class="form-input" id="bt-iniciativa-pertenece" placeholder="Si aplica">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tiempo de Uso</label>
+          <select class="form-select" id="bt-tiempo-uso">
+            <option value="">— Seleccionar —</option>
+            <option value="1 año">1 año</option>
+            <option value="3 años">3 años</option>
+            <option value="indefinido">Indefinido</option>
+            <option value="NA">NA</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">División</label>
+          <input class="form-input" id="bt-division" placeholder="División a la que pertenece">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ambiente</label>
+          <select class="form-select" id="bt-ambiente">
+            <option value="">— Seleccionar —</option>
+            <option value="Prod">Producción</option>
+            <option value="QA">QA</option>
+            <option value="Dev">Desarrollo</option>
+            <option value="Stag">Staging</option>
+            <option value="DRP">DRP</option>
+            <option value="NA">NA</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Proyecto Nuevo</label>
+          <select class="form-select" id="bt-proyecto-nuevo">
+            <option value="">— Seleccionar —</option>
+            <option value="Si">Sí</option>
+            <option value="No">No</option>
+            <option value="NA">NA</option>
+          </select>
+        </div>
+          <div class="form-group full">
+            <label class="form-label">Resumen del Servicio</label>
+            <textarea class="form-input" id="bt-resumen" rows="2" placeholder="Breve resumen del servicio"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- File Uploads (Acordeón) -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="accordion-toggle open" onclick="toggleAccordion(this)">
+        <div>
+          <div class="card-title">📁 Insumos</div>
+          <div class="card-sub" style="margin-bottom:0">Arrastra y suelta o selecciona archivos. Se permiten múltiples archivos por tipo.</div>
+        </div>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="accordion-body open">
+      <div class="grid-2" style="gap:12px">
+        <!-- Discovery -->
+        <div class="drop-zone" id="zone-discovery">
+          <input type="file" multiple accept=".docx" data-tipo="discovery">
+          <div class="drop-zone-title">Quick Discovery</div>
+          <div class="drop-zone-hint">.docx</div>
+          <div class="file-list" id="list-discovery"></div>
+        </div>
+        <!-- Diagrama -->
+        <div class="drop-zone" id="zone-diagrama">
+          <input type="file" multiple accept=".drawio,.xml" data-tipo="diagrama">
+          <div class="drop-zone-title">Diagrama</div>
+          <div class="drop-zone-hint">.drawio / .xml</div>
+          <div class="file-list" id="list-diagrama"></div>
+        </div>
+        <!-- Transcripciones -->
+        <div class="drop-zone" id="zone-transcripciones">
+          <input type="file" multiple accept=".txt,.md" data-tipo="transcripciones">
+          <div class="drop-zone-title">Transcripciones / Notas</div>
+          <div class="drop-zone-hint">.txt / .md</div>
+          <div class="file-list" id="list-transcripciones"></div>
+        </div>
+        <!-- Componentes -->
+        <div class="drop-zone" id="zone-componentes">
+          <input type="file" multiple accept=".xlsx" data-tipo="componentes">
+          <div class="drop-zone-title">Componentes N2</div>
+          <div class="drop-zone-hint">.xlsx</div>
+          <div class="file-list" id="list-componentes"></div>
+        </div>
+      </div>
+      </div>
+    </div>
+
+    <!-- Progress area (hidden until submit) -->
+    <div class="card" id="upload-progress-card" style="display:none;margin-bottom:20px">
+      <div class="card-title">⬆️ Progreso de Subida</div>
+      <div id="upload-progress"></div>
+      <div id="upload-status" style="margin-top:12px;font-size:13px;font-weight:600"></div>
+    </div>
+
+    <!-- Actions -->
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <button class="btn btn-outline" onclick="cargarDatosPrueba()">
+        🧪 Cargar datos de prueba
+      </button>
+      <button class="btn btn-primary" id="btn-crear" onclick="crearIniciativa()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        Crear y Subir Insumos
+      </button>
+      <button class="btn btn-blue" id="btn-procesar" onclick="procesarIniciativa()" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Procesar con IA
+      </button>
+    </div>
+  </div>
+
+
+
+</div>
+
+
+
+
+<script>
+// ── CONFIG ─────────────────────────────────────────────────
+const API_BASE = 'https://1vo8syihoe.execute-api.us-east-1.amazonaws.com/prod';
+const API_KEY  = '58kfc3qsCWalMqjcrE89a5xOn6FLfFt821ohMh1E';
+
+// ── Detectar si viene con ID existente ─────────────────────
+const urlParams = new URLSearchParams(location.search);
+const EXISTING_ID = urlParams.get('id');
+
+if (EXISTING_ID) {
+  // Modo: agregar archivos a iniciativa existente
+  document.getElementById('f-id').value = EXISTING_ID;
+  document.querySelector('h1').textContent = '📥 Agregar Insumos';
+  document.querySelector('h1 + p').textContent = `Agregando archivos a la iniciativa ${EXISTING_ID}`;
+  // Ocultar formulario de metadata (ya existe)
+  document.querySelectorAll('.accordion-toggle')[0].closest('.card').style.display = 'none';
+  document.querySelectorAll('.accordion-toggle')[1].closest('.card').style.display = 'none';
+  // Cambiar texto del botón
+  document.getElementById('btn-crear').innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg> Subir Archivos';
+}
+
+// ── DATOS DE PRUEBA ────────────────────────────────────────
+function cargarDatosPrueba() {
+  document.getElementById('f-nombre').value      = 'Migración Constancias Retención';
+  document.getElementById('f-solicitante').value = 'Juan Pérez';
+  document.getElementById('f-objetivo').value    = 'Migración del sistema de constancias fiscales a AWS con alta disponibilidad';
+  document.getElementById('f-lider').value       = 'Carlos Ruiz';
+  document.getElementById('bt-project').value    = 'AforeCoppel';
+  document.getElementById('bt-owner').value      = 'Arquitectura Cloud';
+  document.getElementById('bt-cost-center').value = 'CC-4521';
+  document.getElementById('bt-business-unit').value = 'Dirección de Operaciones y Servicio AFORE';
+  document.getElementById('bt-arquitecto').value = 'María González';
+  document.getElementById('bt-unidad-negocio').value = 'Afore';
+  document.getElementById('bt-area-negocio').value = 'BackOffice';
+  document.getElementById('bt-macro-servicio').value = 'Menú Operaciones Afore';
+  document.getElementById('bt-servicio').value   = 'Constancias';
+  document.getElementById('bt-sistema').value    = 'SistemaConstancias';
+  document.getElementById('bt-resp-negocio').value = 'Ana López';
+  document.getElementById('bt-resp-ti').value    = 'Pedro Martínez';
+  document.getElementById('bt-id-presupuesto').value = 'Presupuesto Afore';
+  document.getElementById('bt-num-centro').value = '234190';
+  document.getElementById('bt-nombre-centro').value = '06 DESARROLLO DE SOLS TI AFORE';
+  document.getElementById('bt-tiempo-uso').value = '3 años';
+  document.getElementById('bt-division').value   = 'Servicios Financieros';
+  document.getElementById('bt-ambiente').value   = 'Prod';
+  document.getElementById('bt-proyecto-nuevo').value = 'Si';
+  document.getElementById('bt-resumen').value    = 'Sistema de generación y consulta de constancias de retención migrado a AWS';
+  // Abrir acordeón de business tags
+  const btToggle = document.querySelectorAll('.accordion-toggle')[1];
+  if (!btToggle.classList.contains('open')) btToggle.click();
+  showAlert('Datos de prueba cargados. Sube al menos un archivo para continuar.', 'success');
+}
+
+// ── STATE ──────────────────────────────────────────────────
+const files = { discovery: [], diagrama: [], transcripciones: [], componentes: [] };
+let currentIniciativa = null;
+let pollInterval = null;
+
+// ── ACCORDION ──────────────────────────────────────────────
+function toggleAccordion(el) {
+  el.classList.toggle('open');
+  const body = el.nextElementSibling;
+  body.classList.toggle('open');
+}
+
+
+
+// ── DRAG & DROP + FILE SELECT ──────────────────────────────
+document.querySelectorAll('.drop-zone').forEach(zone => {
+  const input = zone.querySelector('input[type=file]');
+  const tipo = input.dataset.tipo;
+
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    addFiles(tipo, Array.from(e.dataTransfer.files));
+  });
+  input.addEventListener('change', e => {
+    addFiles(tipo, Array.from(e.target.files));
+    e.target.value = '';
+  });
+});
+
+function addFiles(tipo, newFiles) {
+  // Validar extensiones
+  const allowed = { discovery: ['.docx'], diagrama: ['.drawio', '.xml'], transcripciones: ['.txt', '.md'], componentes: ['.xlsx'] };
+  const valid = newFiles.filter(f => allowed[tipo].some(ext => f.name.toLowerCase().endsWith(ext)));
+  if (valid.length < newFiles.length) showAlert('Algunos archivos fueron ignorados por extensión inválida.', 'warn');
+  files[tipo] = [...files[tipo], ...valid];
+  renderFileList(tipo);
+}
+
+function removeFile(tipo, idx) {
+  files[tipo].splice(idx, 1);
+  renderFileList(tipo);
+}
+
+function renderFileList(tipo) {
+  const el = document.getElementById(`list-${tipo}`);
+  el.innerHTML = files[tipo].map((f, i) =>
+    `<div class="file-list-item"><span>📄 ${f.name}</span><span class="remove" onclick="removeFile('${tipo}',${i})">✕</span></div>`
+  ).join('');
+}
+
+// ── CREATE INITIATIVE + UPLOAD ─────────────────────────────
+async function crearIniciativa() {
+  const totalFiles = Object.values(files).flat();
+  if (totalFiles.length === 0) {
+    showAlert('Sube al menos un insumo.', 'warn');
+    return;
+  }
+
+  document.getElementById('btn-crear').disabled = true;
+
+  // Si es iniciativa existente, solo subir archivos
+  if (EXISTING_ID) {
+    try {
+      const archivos = {};
+      for (const [tipo, arr] of Object.entries(files)) {
+        if (arr.length) archivos[tipo] = arr.map(f => f.name);
+      }
+      // Pedir presigned URLs al backend
+      const res = await fetch(`${API_BASE}/iniciativas`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY },
+        body: JSON.stringify({ id_iniciativa: EXISTING_ID, archivos, modo: 'agregar_insumos' })
+      });
+      if (!res.ok) throw new Error((await res.json()).error || `HTTP ${res.status}`);
+      const data = await res.json();
+      currentIniciativa = EXISTING_ID;
+      showAlert(`Subiendo archivos a ${EXISTING_ID}...`, 'success');
+      await uploadFiles(data.upload_urls);
+      showAlert(`Archivos subidos a ${EXISTING_ID}. Puedes volver a validar.`, 'success');
+      // Mostrar link para volver
+      document.getElementById('upload-status').innerHTML += `<br><a href="paso1-validacion.html?id=${EXISTING_ID}" class="btn btn-blue btn-sm" style="margin-top:12px">← Volver a Validación</a>`;
+    } catch (err) {
+      showAlert(`Error: ${err.message}`, 'warn');
+    }
+    document.getElementById('btn-crear').disabled = false;
+    return;
+  }
+
+  // Flujo normal: crear nueva iniciativa
+  const id = document.getElementById('f-id').value.trim() || `INI-${new Date().getFullYear()}-${Math.random().toString(36).slice(2,7).toUpperCase()}`;
+  const nombre = document.getElementById('f-nombre').value.trim();
+  const solicitante = document.getElementById('f-solicitante').value.trim();
+  const objetivo = document.getElementById('f-objetivo').value.trim();
+  const lider = document.getElementById('f-lider').value.trim();
+
+  if (!nombre || !solicitante) {
+    showAlert('Completa los campos obligatorios: Nombre y Solicitante.', 'warn');
+    document.getElementById('btn-crear').disabled = false;
+    return;
+  }
+
+  // Recolectar Business Tags
+  const business_tags = {
+    project: document.getElementById('bt-project').value.trim(),
+    owner: document.getElementById('bt-owner').value.trim(),
+    cost_center: document.getElementById('bt-cost-center').value.trim(),
+    business_unit: document.getElementById('bt-business-unit').value.trim(),
+    nombre_proyecto: `${id} - ${nombre}`,
+    lider_proyecto: lider,
+    objetivo_proyecto: objetivo,
+    arquitecto: document.getElementById('bt-arquitecto').value.trim(),
+    unidad_negocio: document.getElementById('bt-unidad-negocio').value.trim(),
+    area_negocio: document.getElementById('bt-area-negocio').value.trim(),
+    macro_servicio: document.getElementById('bt-macro-servicio').value.trim(),
+    servicio: document.getElementById('bt-servicio').value.trim(),
+    sistema_aplicacion: document.getElementById('bt-sistema').value.trim(),
+    responsable_negocio: document.getElementById('bt-resp-negocio').value.trim(),
+    responsable_ti: document.getElementById('bt-resp-ti').value.trim(),
+    solicitante: solicitante,
+    id_presupuesto: document.getElementById('bt-id-presupuesto').value.trim(),
+    numero_centro_gasto: document.getElementById('bt-num-centro').value.trim(),
+    nombre_centro_gasto: document.getElementById('bt-nombre-centro').value.trim(),
+    iniciativa_pertenece: document.getElementById('bt-iniciativa-pertenece').value.trim(),
+    tiempo_uso: document.getElementById('bt-tiempo-uso').value,
+    resumen_servicio: document.getElementById('bt-resumen').value.trim(),
+    division: document.getElementById('bt-division').value.trim(),
+    ambiente: document.getElementById('bt-ambiente').value,
+    proyecto_nuevo: document.getElementById('bt-proyecto-nuevo').value,
+  };
+
+  // Build archivos map for presigned URLs
+  const archivos = {};
+  for (const [tipo, arr] of Object.entries(files)) {
+    if (arr.length) archivos[tipo] = arr.map(f => f.name);
+  }
+
+  try {
+    // POST crear iniciativa
+    const res = await fetch(`${API_BASE}/iniciativas`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY },
+      body: JSON.stringify({
+        id_iniciativa: id,
+        nombre,
+        descripcion: objetivo,
+        ambiente: business_tags.ambiente || 'Prod',
+        solicitante,
+        business_tags,
+        archivos
+      })
+    });
+    if (!res.ok) throw new Error((await res.json()).error || `HTTP ${res.status}`);
+    const data = await res.json();
+
+    currentIniciativa = id;
+    showAlert(`Iniciativa ${id} creada correctamente. Subiendo archivos...`, 'success');
+
+    // Upload files using presigned URLs
+    await uploadFiles(data.upload_urls);
+
+    document.getElementById('btn-procesar').disabled = false;
+    showAlert('Todos los archivos subidos correctamente. Puedes lanzar el procesamiento.', 'success');
+
+  } catch (err) {
+    showAlert(`Error: ${err.message}`, 'warn');
+  }
+  document.getElementById('btn-crear').disabled = false;
+}
+
+async function uploadFiles(urls) {
+  const progressCard = document.getElementById('upload-progress-card');
+  const progressEl = document.getElementById('upload-progress');
+  const statusEl = document.getElementById('upload-status');
+  progressCard.style.display = 'block';
+
+  const allUploads = [];
+  for (const [tipo, arr] of Object.entries(urls)) {
+    for (const item of arr) {
+      const file = files[tipo]?.find(f => f.name === item.filename);
+      if (file) allUploads.push({ ...item, file, tipo });
+    }
+  }
+
+  // Render progress bars
+  progressEl.innerHTML = allUploads.map((u, i) =>
+    `<div class="progress-item"><span class="name">${u.file.name}</span><div class="bar"><div class="bar-fill" id="bar-${i}" style="width:0%"></div></div><span class="pct" id="pct-${i}">0%</span></div>`
+  ).join('');
+
+  let completed = 0;
+  const total = allUploads.length;
+
+  for (let i = 0; i < allUploads.length; i++) {
+    const { upload_url, file } = allUploads[i];
+    try {
+      await uploadWithProgress(upload_url, file, i);
+      completed++;
+    } catch (err) {
+      document.getElementById(`pct-${i}`).textContent = '❌';
+      // Retry once
+      try {
+        await uploadWithProgress(upload_url, file, i);
+        completed++;
+      } catch (e2) {
+        console.error('Upload failed:', file.name, e2);
+      }
+    }
+    statusEl.textContent = `${completed}/${total} archivos subidos`;
+  }
+}
+
+function uploadWithProgress(url, file, idx) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', url);
+    xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+    xhr.upload.onprogress = e => {
+      if (e.lengthComputable) {
+        const pct = Math.round((e.loaded / e.total) * 100);
+        document.getElementById(`bar-${idx}`).style.width = pct + '%';
+        document.getElementById(`pct-${idx}`).textContent = pct + '%';
+      }
+    };
+    xhr.onload = () => xhr.status < 400 ? resolve() : reject(new Error(`HTTP ${xhr.status}`));
+    xhr.onerror = () => reject(new Error('Network error'));
+    xhr.send(file);
+  });
+}
+
+// ── PROCESS ────────────────────────────────────────────────
+async function procesarIniciativa() {
+  if (!currentIniciativa) return;
+  document.getElementById('btn-procesar').disabled = true;
+
+  try {
+    const res = await fetch(`${API_BASE}/iniciativas/${currentIniciativa}/procesar`, { method: 'POST', headers: { 'x-api-key': API_KEY } });
+    if (!res.ok) throw new Error((await res.json()).error || `HTTP ${res.status}`);
+    showAlert(`Procesamiento iniciado para ${currentIniciativa}. Monitorea en el listado.`, 'success');
+    // Start polling
+    startPolling(currentIniciativa);
+  } catch (err) {
+    showAlert(`Error al procesar: ${err.message}`, 'warn');
+    document.getElementById('btn-procesar').disabled = false;
+  }
+}
+
+
+
+// ── POLLING ────────────────────────────────────────────────
+function startPolling(id) {
+  if (pollInterval) clearInterval(pollInterval);
+  pollInterval = setInterval(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/iniciativas/${id}`, { headers: { 'x-api-key': API_KEY } });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.estado !== 'PROCESANDO') {
+        clearInterval(pollInterval);
+        pollInterval = null;
+        showAlert(`Iniciativa ${id} cambió a estado: ${data.estado}`, data.estado === 'ERROR' ? 'warn' : 'success');
+        document.getElementById('btn-procesar').disabled = false;
+      }
+    } catch (e) { /* retry next interval */ }
+  }, 5000);
+}
+
+// ── TOAST ──────────────────────────────────────────────────
+function showToast(msg, type = 'success') {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.style.cssText = 'position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:10px;z-index:9999';
+    document.body.appendChild(container);
+  }
+  const colors = {
+    success: { bg:'#00A651', icon:'✅' },
+    warn:    { bg:'#FF8C00', icon:'⚠️' },
+    info:    { bg:'#1B2CC1', icon:'ℹ️' },
+  };
+  const { bg, icon } = colors[type] || colors.info;
+  const toast = document.createElement('div');
+  toast.style.cssText = `background:${bg};color:#fff;padding:14px 18px;border-radius:12px;font-size:13px;font-weight:600;font-family:var(--font-head);box-shadow:0 4px 16px rgba(0,0,0,0.2);display:flex;align-items:center;gap:10px;min-width:280px;max-width:360px;animation:slideIn .3s ease`;
+  toast.innerHTML = `<span style="font-size:18px">${icon}</span><span style="flex:1">${msg}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => { toast.style.animation = 'fadeOut .3s ease forwards'; setTimeout(() => toast.remove(), 300); }, 4000);
+}
+
+// ── HELPERS ────────────────────────────────────────────────
+function showAlert(msg, type) {
+  showToast(msg, type);
+}
+
+
+</script>
+<script src="js/sidebar.js"></script>
+</body>
+</html>

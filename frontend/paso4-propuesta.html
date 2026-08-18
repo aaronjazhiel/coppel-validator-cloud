@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paso 4 — Generar Propuesta</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .step-header { display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid var(--c-gray-200); }
+    .step-number { width:36px;height:36px;border-radius:50%;background:var(--c-blue);color:white;display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-weight:900;font-size:16px;flex-shrink:0; }
+    .step-title { font-family:var(--font-head);font-size:20px;font-weight:900;color:var(--c-gray-700); }
+    .step-sub { font-size:13px;color:var(--c-gray-500); }
+    .step-nav { display:flex;justify-content:space-between;align-items:center;margin-top:28px;padding-top:20px;border-top:2px solid var(--c-gray-200); }
+    .gen-panel { text-align:center;padding:48px 24px; }
+    .gen-icon { width:80px;height:80px;background:var(--c-blue-light);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px; }
+    .gen-icon svg { width:40px;height:40px;color:var(--c-blue); }
+    .gen-title { font-family:var(--font-head);font-size:18px;font-weight:800;color:var(--c-gray-700);margin-bottom:8px; }
+    .gen-desc { font-size:13px;color:var(--c-gray-500);max-width:500px;margin:0 auto 24px;line-height:1.6; }
+    .gen-progress { display:none;flex-direction:column;align-items:center;padding:48px 24px;gap:16px; }
+    .gen-progress.active { display:flex; }
+    .gen-spinner { width:48px;height:48px;border:4px solid var(--c-blue-light);border-top-color:var(--c-blue);border-radius:50%;animation:spin .8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .gen-progress-text { font-family:var(--font-head);font-size:16px;font-weight:700;color:var(--c-blue); }
+    .gen-progress-sub { font-size:13px;color:var(--c-gray-500); }
+    .result-panel { display:none;text-align:center;padding:48px 24px; }
+    .result-panel.active { display:block; }
+    .result-icon { width:80px;height:80px;background:#E8F5E9;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px; }
+    .result-icon svg { width:40px;height:40px;color:#2E7D32; }
+    .result-title { font-family:var(--font-head);font-size:18px;font-weight:800;color:#2E7D32;margin-bottom:8px; }
+    .result-desc { font-size:13px;color:var(--c-gray-500);margin-bottom:24px; }
+    .download-btns { display:flex;gap:12px;justify-content:center;flex-wrap:wrap; }
+    .doc-sections { text-align:left;max-width:500px;margin:24px auto 0;border-top:1px solid var(--c-gray-200);padding-top:16px; }
+    .doc-sec-item { display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--c-gray-100);font-size:13px;color:var(--c-gray-700); }
+    .doc-sec-num { width:24px;height:24px;background:var(--c-blue-light);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--c-blue);font-family:var(--font-head);flex-shrink:0; }
+  </style>
+</head>
+<body>
+
+<div style="padding:28px">
+  <div class="step-header">
+    <div class="step-number">4</div>
+    <div>
+      <div class="step-title">Generar Propuesta Final</div>
+      <div class="step-sub" id="sub-title">Documento Word con arquitectura, costos y recomendaciones</div>
+    </div>
+  </div>
+
+  <!-- Panel inicial: listo para generar -->
+  <div class="card" style="margin-bottom:20px" id="panel-ready">
+    <div class="gen-panel">
+      <div class="gen-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      </div>
+      <div class="gen-title">Propuesta lista para generar</div>
+      <div class="gen-desc">Se generará un documento Word profesional con 8 secciones: introducción, requerimiento técnico, premisas, arquitectura, fuera de alcance, consideraciones, propuesta económica y condiciones comerciales.</div>
+      <button class="btn btn-primary" id="btn-generar" onclick="generar()">Generar Propuesta Word</button>
+    </div>
+  </div>
+
+  <!-- Panel: generando -->
+  <div class="card" style="margin-bottom:20px;display:none" id="panel-progress">
+    <div class="gen-progress active">
+      <div class="gen-spinner"></div>
+      <div class="gen-progress-text" id="progress-msg">Generando propuesta...</div>
+      <div class="gen-progress-sub" id="progress-detail">Iniciando...</div>
+      <div style="width:100%;max-width:400px;margin-top:12px">
+        <div style="background:var(--c-gray-200);border-radius:8px;height:8px;overflow:hidden">
+          <div id="progress-bar" style="height:100%;background:var(--c-blue);border-radius:8px;width:0%;transition:width .5s ease"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-top:6px;font-size:11px;color:var(--c-gray-500)">
+          <span id="progress-step">Paso 0/6</span>
+          <span id="progress-time">0s</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Panel: resultado -->
+  <div class="card" style="margin-bottom:20px;display:none" id="panel-result">
+    <div class="result-panel active">
+      <div class="result-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      <div class="result-title">Propuesta generada exitosamente</div>
+      <div class="result-desc" id="result-desc">Documento Word listo para descarga</div>
+      <div class="download-btns">
+        <a id="btn-download-word" class="btn btn-primary" href="#" target="_blank">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Descargar Word (.docx)
+        </a>
+        <a id="btn-download-csv" class="btn btn-outline" href="#" onclick="descargarCSV();return false;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Descargar Costos (.csv)
+        </a>
+      </div>
+      <div class="doc-sections">
+        <div style="font-family:var(--font-head);font-size:12px;font-weight:800;color:var(--c-gray-500);margin-bottom:10px">CONTENIDO DEL DOCUMENTO</div>
+        <div class="doc-sec-item"><div class="doc-sec-num">1</div>Introducción</div>
+        <div class="doc-sec-item"><div class="doc-sec-num">2</div>Requerimiento Técnico</div>
+        <div class="doc-sec-item"><div class="doc-sec-num">3</div>Premisas y Restricciones</div>
+        <div class="doc-sec-item"><div class="doc-sec-num">4</div>Arquitectura de Infraestructura AWS</div>
+        <div class="doc-sec-item"><div class="doc-sec-num">5</div>Fuera de Alcance</div>
+        <div class="doc-sec-item"><div class="doc-sec-num">6</div>Consideraciones Generales</div>
+        <div class="doc-sec-item"><div class="doc-sec-num">7</div>Propuesta Económica AWS</div>
+        <div class="doc-sec-item"><div class="doc-sec-num">8</div>Consideraciones Comerciales</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <div class="step-nav">
+    <a id="btn-anterior" href="paso3-costos.html" class="btn btn-outline btn-sm">← Paso 3: Costos</a>
+    <a href="listado.html" class="btn btn-outline btn-sm">Volver al listado</a>
+  </div>
+</div>
+
+<script>
+const API_BASE = 'https://1vo8syihoe.execute-api.us-east-1.amazonaws.com/prod';
+const API_KEY  = '58kfc3qsCWalMqjcrE89a5xOn6FLfFt821ohMh1E';
+const HEADERS  = { 'x-api-key': API_KEY, 'Content-Type': 'application/json' };
+
+const params = new URLSearchParams(location.search);
+const ID = params.get('id');
+
+document.getElementById('btn-anterior').href = `paso3-costos.html?id=${ID}`;
+
+let pollTimer = null;
+
+async function load() {
+  if (!ID) return;
+  document.getElementById('sub-title').textContent = `Iniciativa: ${ID}`;
+
+  const res = await fetch(`${API_BASE}/iniciativas/${ID}`, { headers: HEADERS });
+  if (!res.ok) return;
+  const meta = await res.json();
+
+  if (meta.estado === 'GENERADO') {
+    showResult(meta);
+  } else if (meta.estado === 'GENERANDO_PROPUESTA') {
+    showProgress();
+    startPolling();
+  }
+  // Si no está generado, mostrar panel ready (default)
+}
+
+function showProgress() {
+  document.getElementById('panel-ready').style.display = 'none';
+  document.getElementById('panel-progress').style.display = 'block';
+  document.getElementById('panel-result').style.display = 'none';
+}
+
+function showResult(meta) {
+  document.getElementById('panel-ready').style.display = 'none';
+  document.getElementById('panel-progress').style.display = 'none';
+  document.getElementById('panel-result').style.display = 'block';
+
+  if (meta.salidas_urls?.propuesta) {
+    document.getElementById('btn-download-word').href = meta.salidas_urls.propuesta;
+  }
+
+  const fecha = meta.fecha_actualizacion ? new Date(meta.fecha_actualizacion).toLocaleString('es-MX') : '';
+  document.getElementById('result-desc').textContent = `Generado el ${fecha}`;
+}
+
+async function generar() {
+  document.getElementById('btn-generar').disabled = true;
+  try {
+    const res = await fetch(`${API_BASE}/iniciativas/${ID}/propuesta`, {
+      method: 'POST', headers: HEADERS
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      if (body.estado_actual) {
+        showBlocker('⚠️ No es posible generar la propuesta', body.error);
+      } else {
+        showBlocker(`Error ${res.status}`, body.error || body.message || 'Error inesperado.');
+      }
+      return;
+    }
+    showProgress();
+    startPolling();
+  } catch(e) {
+    showBlocker('Error de conexión', 'No se pudo conectar con el servidor. Verifica tu conexión e intenta de nuevo.');
+  } finally {
+    document.getElementById('btn-generar').disabled = false;
+  }
+}
+
+function showBlocker(titulo, detalle) {
+  const modal = document.createElement('div');
+  modal.id = 'blocker-modal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:9999;display:flex;align-items:center;justify-content:center;padding:24px';
+  modal.innerHTML = `
+    <div style="background:#fff;border-radius:16px;padding:32px;max-width:440px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.2)">
+      <div style="width:64px;height:64px;background:#FFF3E0;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#E65100" stroke-width="2" width="32" height="32"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+      </div>
+      <div style="font-family:var(--font-head);font-size:17px;font-weight:800;color:#E65100;margin-bottom:10px">${titulo}</div>
+      <div style="font-size:13px;color:var(--c-gray-600);line-height:1.6;margin-bottom:24px">${detalle}</div>
+      <div style="display:flex;gap:10px;justify-content:center">
+        <button onclick="document.getElementById('blocker-modal').remove()" class="btn btn-outline btn-sm">Cerrar</button>
+        <a href="paso1-validacion.html?id=${ID}" class="btn btn-blue btn-sm">← Ir a Validación</a>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+function startPolling() {
+  if (pollTimer) clearInterval(pollTimer);
+  let elapsed = 0;
+  pollTimer = setInterval(async () => {
+    elapsed += 3;
+    document.getElementById('progress-time').textContent = `${elapsed}s`;
+    try {
+      // Leer progreso detallado
+      const pRes = await fetch(`${API_BASE}/iniciativas/${ID}/progreso`, { headers: HEADERS });
+      if (pRes.ok) {
+        const p = await pRes.json();
+        document.getElementById('progress-msg').textContent = p.mensaje || 'Procesando...';
+        document.getElementById('progress-step').textContent = `Paso ${p.paso}/${p.total}`;
+        document.getElementById('progress-bar').style.width = `${p.porcentaje}%`;
+      }
+      // Verificar estado final
+      const res = await fetch(`${API_BASE}/iniciativas/${ID}`, { headers: HEADERS });
+      const d = await res.json();
+      if (d.estado === 'GENERADO') {
+        clearInterval(pollTimer);
+        document.getElementById('progress-bar').style.width = '100%';
+        document.getElementById('progress-msg').textContent = '¡Listo!';
+        setTimeout(() => showResult(d), 800);
+      } else if (d.estado === 'ERROR_PROPUESTA') {
+        clearInterval(pollTimer);
+        document.getElementById('panel-progress').style.display = 'none';
+        document.getElementById('panel-ready').style.display = 'block';
+        document.getElementById('btn-generar').disabled = false;
+        alert('Error en la generación. Intenta de nuevo.');
+      }
+    } catch(e) {}
+  }, 3000);
+}
+
+function descargarCSV() {
+  // Redirigir al paso 3 que tiene la descarga
+  window.open(`paso3-costos.html?id=${ID}`, '_blank');
+}
+
+load();
+</script>
+<script src="js/sidebar.js"></script>
+</body>
+</html>

@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalle de Iniciativa — CloudArch AI</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .status-badge { display:inline-flex;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;font-family:var(--font-head); }
+    .status-INGESTA    { background:var(--c-info-bg);color:var(--c-info); }
+    .status-PROCESANDO { background:var(--c-warn-bg);color:var(--c-warn); }
+    .status-EXTRAIDO   { background:var(--c-success-bg);color:var(--c-success); }
+    .status-EN_REVISION{ background:var(--c-warn-bg);color:var(--c-warn); }
+    .status-VALIDADO   { background:var(--c-success-bg);color:var(--c-success); }
+    .status-GENERADO   { background:#E8F5E9;color:#2E7D32; }
+    .status-ERROR      { background:var(--c-danger-bg);color:var(--c-danger); }
+    .meta-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px; }
+    .meta-item { background:var(--c-gray-100);border-radius:var(--radius-md);padding:14px 16px; }
+    .meta-label { font-size:11px;font-weight:700;color:var(--c-gray-500);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px; }
+    .meta-value { font-size:14px;font-weight:700;color:var(--c-gray-700);font-family:var(--font-head); }
+    .insumo-row { display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:var(--radius-md);background:var(--c-gray-100);margin-bottom:8px; }
+    .insumo-icon { width:36px;height:36px;background:var(--c-blue-light);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px; }
+    .insumo-name { flex:1;font-size:13px;font-weight:600;color:var(--c-gray-700);word-break:break-all; }
+    .insumo-tipo { font-size:11px;font-weight:700;color:var(--c-blue);font-family:var(--font-head);background:var(--c-blue-light);padding:2px 8px;border-radius:10px; }
+    .insumo-date { font-size:11px;color:var(--c-gray-500); }
+    .ficha-section { margin-bottom:16px; }
+    .ficha-section-title { font-family:var(--font-head);font-size:13px;font-weight:800;color:var(--c-blue);margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid var(--c-blue-light); }
+    .ficha-field { display:flex;gap:8px;margin-bottom:6px;font-size:13px; }
+    .ficha-key { font-weight:700;color:var(--c-gray-700);min-width:160px;flex-shrink:0; }
+    .ficha-val { color:var(--c-gray-700); }
+    .hueco-item { display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--c-warn-bg);border-left:3px solid var(--c-warn);border-radius:var(--radius-sm);margin-bottom:6px;font-size:13px;color:var(--c-warn); }
+    .validacion-grid { display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:16px; }
+    .seccion-card { background:var(--c-gray-100);border-radius:var(--radius-md);padding:14px 16px;border-left:4px solid var(--c-gray-300); }
+    .seccion-card.ok { border-left-color:#00A651; }
+    .seccion-card.warn { border-left-color:#FF8C00; }
+    .seccion-card.fail { border-left-color:#E53935; }
+    .seccion-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:8px; }
+    .seccion-nombre { font-size:13px;font-weight:700;color:var(--c-gray-700);font-family:var(--font-head); }
+    .seccion-puntaje { font-size:13px;font-weight:800;font-family:var(--font-head); }
+    .seccion-puntaje.ok { color:#00A651; }
+    .seccion-puntaje.warn { color:#FF8C00; }
+    .seccion-puntaje.fail { color:#E53935; }
+    .seccion-bar { height:6px;background:var(--c-gray-200);border-radius:3px;overflow:hidden;margin-bottom:8px; }
+    .seccion-bar-fill { height:100%;border-radius:3px;transition:width .4s; }
+    .seccion-hueco { font-size:11px;color:var(--c-gray-500);padding:2px 0;display:flex;gap:6px;align-items:flex-start; }
+    .campo-row { display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid var(--c-gray-200); }
+    .campo-row:last-child { border-bottom:none; }
+    .campo-estado { width:20px;flex-shrink:0;font-size:14px;margin-top:2px; }
+    .campo-info { flex:1; }
+    .campo-nombre { font-size:12px;font-weight:700;color:var(--c-gray-700); }
+    .campo-valor { font-size:12px;color:var(--c-gray-500);margin-top:2px; }
+    .campo-fuente { font-size:10px;color:var(--c-blue);font-weight:700;margin-top:2px; }
+    .campo-input-wrap { margin-top:6px; }
+    .campo-input { width:100%;padding:6px 10px;border:1.5px solid var(--c-gray-300);border-radius:6px;font-size:12px;font-family:inherit; }
+    .campo-input:focus { outline:none;border-color:var(--c-blue); }
+    .campo-propuesta { background:rgba(255,140,0,0.08);border-radius:6px;padding:6px 10px;font-size:12px;color:#FF8C00;margin-top:4px;cursor:pointer; }
+    .btn-completar { margin-top:16px;width:100%; }
+    .etapa-row { display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:var(--radius-md);background:var(--c-gray-100);margin-bottom:8px; }
+    .etapa-icon { font-size:18px;width:28px;text-align:center; }
+    .etapa-label { flex:1;font-size:13px;font-weight:600;color:var(--c-gray-700); }
+    .etapa-estado { font-size:11px;font-weight:700;font-family:var(--font-head);padding:3px 10px;border-radius:20px; }
+    .etapa-pendiente { background:var(--c-gray-200);color:var(--c-gray-500); }
+    .etapa-activo { background:var(--c-warn-bg);color:var(--c-warn); }
+    .etapa-ok { background:var(--c-success-bg);color:var(--c-success); }
+    .etapa-fail { background:var(--c-danger-bg);color:var(--c-danger); }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .spin { display:inline-block;animation:spin 1s linear infinite; }
+  </style>
+</head>
+<body>
+
+<!-- HERO dinámico -->
+<div class="page-hero" style="padding-bottom:28px">
+  <div class="hero-label">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+    Detalle de Iniciativa
+  </div>
+  <h1 class="hero-title" style="font-size:26px" id="hero-nombre">Cargando...</h1>
+  <div style="display:flex;align-items:center;gap:12px;margin-top:8px;position:relative;z-index:1">
+    <span id="hero-id" style="font-size:13px;color:rgba(255,255,255,0.7)"></span>
+    <span id="hero-estado"></span>
+  </div>
+</div>
+
+<div class="content-area">
+  <div id="alerts"></div>
+
+  <!-- Acciones -->
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:24px">
+    <a href="ingesta.html" class="btn btn-outline btn-sm">← Volver al listado</a>
+    <button class="btn btn-blue btn-sm" id="btn-validar" onclick="validarDiscovery()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      Validar Documentos
+    </button>
+    <button class="btn btn-blue btn-sm" id="btn-procesar" onclick="procesarIniciativa()" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      Procesar con IA
+    </button>
+    <button class="btn btn-primary btn-sm" id="btn-propuesta" onclick="generarPropuesta()" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Generar Propuesta Word
+    </button>
+    <a id="btn-descargar" style="display:none" class="btn btn-outline btn-sm" target="_blank">
+      ⬇️ Descargar Word
+    </a>
+    <a id="btn-ver-propuesta" style="display:none" class="btn btn-blue btn-sm" href="propuesta.html">
+      📄 Ver Informe
+    </a>
+    <a id="btn-ver-costos" style="display:none" class="btn btn-outline btn-sm" href="costos.html">
+      💰 Estimación de Costos
+    </a>
+    <button class="btn btn-outline btn-sm" onclick="location.reload()">🔄 Refrescar</button>
+  </div>
+
+  <!-- Panel de Validación -->
+  <div class="card" style="margin-bottom:20px" id="card-validacion">
+    <div class="card-title">✅ Validación de Documentos</div>
+    <div class="card-sub">Estado del análisis por etapa</div>
+
+    <!-- Etapas -->
+    <div style="margin:16px 0">
+      <div class="etapa-row">
+        <div class="etapa-icon">📄</div>
+        <div class="etapa-label">Quick Discovery</div>
+        <span class="etapa-estado" id="etapa-discovery">Pendiente</span>
+      </div>
+      <div class="etapa-row">
+        <div class="etapa-icon">📝</div>
+        <div class="etapa-label">Transcripciones</div>
+        <span class="etapa-estado" id="etapa-transcripciones">Pendiente</span>
+      </div>
+      <div class="etapa-row">
+        <div class="etapa-icon">☁️</div>
+        <div class="etapa-label">Extracción de Servicios AWS</div>
+        <span class="etapa-estado" id="etapa-servicios">Pendiente</span>
+      </div>
+    </div>
+
+    <!-- Resultado por sección -->
+    <div id="validacion-secciones" style="display:none">
+      <div style="font-family:var(--font-head);font-size:13px;font-weight:800;color:var(--c-gray-700);margin-bottom:12px">Detalle por sección</div>
+      <div class="validacion-grid" id="secciones-grid"></div>
+    </div>
+
+    <!-- Huecos críticos -->
+    <div id="huecos-criticos-panel" style="display:none;margin-top:16px">
+      <div style="font-family:var(--font-head);font-size:13px;font-weight:800;color:#E53935;margin-bottom:8px">⚠️ Información faltante — completa los campos para continuar</div>
+      <div id="huecos-criticos-list"></div>
+      <button class="btn btn-primary btn-completar" id="btn-guardar-huecos" onclick="guardarHuecos()" style="display:none">
+        💾 Guardar y Re-validar
+      </button>
+    </div>
+  </div>
+
+  <!-- Metadata -->
+  <div class="meta-grid" id="meta-grid"></div>
+
+  <!-- Completitud -->
+  <div class="card" style="margin-bottom:20px" id="card-completitud">
+    <div class="card-title">📊 Completitud</div>
+    <div class="score-wrap">
+      <div class="score-num" id="score-num">0%</div>
+      <div class="score-bar-track" style="flex:1">
+        <div class="score-bar-fill" id="score-bar" style="width:0%"></div>
+      </div>
+    </div>
+    <div id="huecos-list"></div>
+  </div>
+
+  <!-- Insumos -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">📁 Insumos subidos</div>
+    <div class="card-sub">Archivos cargados a S3 para esta iniciativa</div>
+    <div id="insumos-list">
+      <div class="empty-state"><div class="empty-title">Sin insumos registrados</div></div>
+    </div>
+  </div>
+
+  <!-- Ficha Técnica -->
+  <div class="card" id="card-ficha" style="display:none;margin-bottom:20px">
+    <div class="card-title">📋 Ficha Técnica</div>
+    <div class="card-sub">Extraída automáticamente por Claude AI</div>
+    <div id="ficha-content"></div>
+  </div>
+
+  <!-- Business Tags -->
+  <div class="card" id="card-tags" style="display:none;margin-bottom:20px">
+    <div class="card-title">🏷️ Business Tags</div>
+    <div id="tags-content"></div>
+  </div>
+</div>
+
+
+<script>
+const API_BASE = 'https://1vo8syihoe.execute-api.us-east-1.amazonaws.com/prod';
+const API_KEY  = '58kfc3qsCWalMqjcrE89a5xOn6FLfFt821ohMh1E';
+const HEADERS  = { 'x-api-key': API_KEY, 'Content-Type': 'application/json' };
+
+const params = new URLSearchParams(location.search);
+const ID = params.get('id');
+
+const TIPO_ICON = { discovery:'📄', diagrama:'🗺️', transcripciones:'📝', componentes:'📊' };
+
+const ESTADO_ETAPA = {
+  INGESTA:                    { discovery:'pendiente', trans:'pendiente', servicios:'pendiente' },
+  VALIDANDO:                  { discovery:'activo',    trans:'pendiente', servicios:'pendiente' },
+  INCOMPLETO:                 { discovery:'fail',      trans:'pendiente', servicios:'pendiente' },
+  DISCOVERY_OK:               { discovery:'ok',        trans:'activo',    servicios:'pendiente' },
+  TRANSCRIPCIONES_OK:         { discovery:'ok',        trans:'ok',        servicios:'pendiente' },
+  TRANSCRIPCIONES_INSUFICIENTES:{ discovery:'ok',       trans:'fail',      servicios:'pendiente' },
+  EXTRAYENDO_SERVICIOS:       { discovery:'ok',        trans:'ok',        servicios:'activo'   },
+  EXTRAIDO:                   { discovery:'ok',        trans:'ok',        servicios:'ok'       },
+  GENERANDO_PROPUESTA:        { discovery:'ok',        trans:'ok',        servicios:'ok'       },
+  GENERADO:                   { discovery:'ok',        trans:'ok',        servicios:'ok'       },
+};
+
+const LABEL_ETAPA = {
+  pendiente: { cls:'etapa-pendiente', txt:'Pendiente' },
+  activo:    { cls:'etapa-activo',    txt:'⏳ Analizando...' },
+  ok:        { cls:'etapa-ok',        txt:'✅ Aprobado' },
+  fail:      { cls:'etapa-fail',      txt:'❌ Incompleto' },
+};
+
+const SECCION_LABEL = {
+  metadata:'Metadata', requisitos:'Requisitos', datos:'Datos',
+  dependencias:'Dependencias', entorno_red:'Entorno / Red',
+  migracion:'Migración', infraestructura:'Infraestructura', dr:'Disaster Recovery'
+};
+
+let pollTimer = null;
+
+async function load() {
+  if (!ID) { showAlert('No se especificó ID de iniciativa.', 'warn'); return; }
+  try {
+    const res = await fetch(`${API_BASE}/iniciativas/${ID}`, { headers: HEADERS });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const d = await res.json();
+    render(d);
+  } catch (e) {
+    showAlert(`Error al cargar: ${e.message}`, 'warn');
+  }
+}
+
+function render(d) {
+  document.title = `${d.id_iniciativa} — CloudArch AI`;
+  document.getElementById('hero-nombre').textContent = d.nombre || d.id_iniciativa;
+  document.getElementById('hero-id').textContent = d.id_iniciativa;
+  document.getElementById('hero-estado').innerHTML =
+    `<span class="status-badge status-${d.estado}">${d.estado}</span>`;
+
+  const fecha = d.fecha_creacion ? new Date(d.fecha_creacion).toLocaleDateString('es-MX') : '—';
+  const upd   = d.fecha_actualizacion ? new Date(d.fecha_actualizacion).toLocaleString('es-MX') : '—';
+  document.getElementById('meta-grid').innerHTML = [
+    ['Solicitante', d.solicitante || '—'],
+    ['Ambiente',    d.ambiente || '—'],
+    ['Nube',        d.nube || '—'],
+    ['Creación',    fecha],
+    ['Actualización', upd],
+    ['Descripción', d.descripcion || '—'],
+  ].map(([k,v]) => `
+    <div class="meta-item">
+      <div class="meta-label">${k}</div>
+      <div class="meta-value">${v}</div>
+    </div>`).join('');
+
+  // Completitud
+  const pct = d.completitud || 0;
+  document.getElementById('score-num').textContent = pct + '%';
+  document.getElementById('score-bar').style.width = pct + '%';
+
+  // Etapas de validación
+  renderEtapas(d.estado);
+
+  // Huecos
+  const huecos = d.huecos || [];
+  document.getElementById('huecos-list').innerHTML = huecos.length
+    ? huecos.map(h => `<div class="hueco-item">⚠️ ${h}</div>`).join('')
+    : '<div style="font-size:13px;color:var(--c-success);margin-top:8px">✅ Sin huecos de información</div>';
+
+  // Insumos
+  const insumos = d.insumos || [];
+  document.getElementById('insumos-list').innerHTML = insumos.length
+    ? insumos.map(i => `
+        <div class="insumo-row">
+          <div class="insumo-icon">${TIPO_ICON[i.tipo] || '📎'}</div>
+          <div class="insumo-name">${i.key?.split('/').pop()?.replace(/\+/g,' ') || i.key}</div>
+          <span class="insumo-tipo">${i.tipo}</span>
+          <span class="insumo-date">${i.subido_en ? new Date(i.subido_en).toLocaleString('es-MX') : ''}</span>
+        </div>`).join('')
+    : '<div class="empty-state"><div class="empty-title">Sin insumos registrados</div></div>';
+
+  // Business Tags
+  const tags = d.business_tags || {};
+  const tagEntries = Object.entries(tags).filter(([,v]) => v);
+  if (tagEntries.length) {
+    document.getElementById('card-tags').style.display = 'block';
+    document.getElementById('tags-content').innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        ${tagEntries.map(([k,v]) => `
+          <div class="ficha-field">
+            <span class="ficha-key">${k.replace(/_/g,' ')}</span>
+            <span class="ficha-val">${v}</span>
+          </div>`).join('')}
+      </div>`;
+  }
+
+  // Botones según estado
+  const validable = ['INGESTA','INCOMPLETO'].includes(d.estado);
+  const procesable = ['DISCOVERY_OK','TRANSCRIPCIONES_OK','TRANSCRIPCIONES_INSUFICIENTES'].includes(d.estado);
+  const propuestable = ['EXTRAIDO'].includes(d.estado);
+  const generado = ['GENERADO'].includes(d.estado);
+  document.getElementById('btn-validar').disabled = !validable;
+  const btnProcesar = document.getElementById('btn-procesar');
+  btnProcesar.style.display = procesable ? 'inline-flex' : 'none';
+  document.getElementById('btn-propuesta').style.display = propuestable ? 'inline-flex' : 'none';
+  if (generado && d.salidas?.propuesta) {
+    const btnDesc = document.getElementById('btn-descargar');
+    btnDesc.style.display = 'inline-flex';
+    btnDesc.href = d.salidas_urls?.propuesta || `${API_BASE}/iniciativas/${ID}/descargar/propuesta`;
+    document.getElementById('btn-ver-propuesta').style.display = 'inline-flex';
+    document.getElementById('btn-ver-propuesta').href = `propuesta.html?id=${ID}`;
+    document.getElementById('btn-ver-costos').style.display = 'inline-flex';
+    document.getElementById('btn-ver-costos').href = `costos.html?id=${ID}`;
+  }
+  if (propuestable || ['EXTRAIDO'].includes(d.estado)) {
+    document.getElementById('btn-ver-costos').style.display = 'inline-flex';
+    document.getElementById('btn-ver-costos').href = `costos.html?id=${ID}`;
+  }
+
+  // Polling si está en proceso
+  if (['VALIDANDO','EXTRAYENDO_SERVICIOS','GENERANDO_PROPUESTA'].includes(d.estado)) {
+    startPolling();
+  } else {
+    stopPolling();
+    // Cargar resultado de validación si existe
+    if (!['INGESTA'].includes(d.estado)) loadValidacionResult();
+    if (['EXTRAIDO','EN_REVISION','VALIDADO','GENERADO'].includes(d.estado)) loadFicha();
+  }
+}
+
+function renderEtapas(estado) {
+  const etapas = ESTADO_ETAPA[estado] || ESTADO_ETAPA['INGESTA'];
+  ['discovery','transcripciones','servicios'].forEach((e, i) => {
+    const key = e === 'transcripciones' ? 'trans' : e;
+    const { cls, txt } = LABEL_ETAPA[etapas[key]] || LABEL_ETAPA['pendiente'];
+    const el = document.getElementById(`etapa-${e}`);
+    el.className = `etapa-estado ${cls}`;
+    el.textContent = txt;
+  });
+}
+
+async function loadValidacionResult() {
+  try {
+    const res = await fetch(`${API_BASE}/iniciativas/${ID}/resultados/discovery`, { headers: HEADERS });
+    if (!res.ok) return;
+    const data = await res.json();
+    renderSecciones(data);
+  } catch(e) { /* no disponible aún */ }
+}
+
+function renderSecciones(resultado) {
+  const secciones = resultado.secciones || {};
+  if (!Object.keys(secciones).length) return;
+
+  document.getElementById('validacion-secciones').style.display = 'block';
+  document.getElementById('secciones-grid').innerHTML = Object.entries(secciones).map(([key, val]) => {
+    const p = val.puntaje || 0;
+    const cls = p >= 80 ? 'ok' : p >= 50 ? 'warn' : 'fail';
+    const color = p >= 80 ? '#00A651' : p >= 50 ? '#FF8C00' : '#E53935';
+    const campos = val.campos || [];
+    const camposIncompletos = campos.filter(c => c.estado !== 'COMPLETO');
+    return `
+      <div class="seccion-card ${cls}">
+        <div class="seccion-header">
+          <span class="seccion-nombre">${SECCION_LABEL[key] || key}</span>
+          <span class="seccion-puntaje ${cls}">${p}%</span>
+        </div>
+        <div class="seccion-bar"><div class="seccion-bar-fill" style="width:${p}%;background:${color}"></div></div>
+        ${camposIncompletos.map(c => {
+          const icon = c.estado === 'PROPUESTA' ? '💡' : '❌';
+          const cls2 = c.estado === 'PROPUESTA' ? 'warn' : 'fail';
+          return `<div class="seccion-hueco"><span>${icon}</span><span>${c.campo}</span></div>`;
+        }).join('')}
+      </div>`;
+  }).join('');
+
+  // Huecos críticos con formulario
+  const huecosCriticos = resultado.huecos_criticos || [];
+  if (huecosCriticos.length) {
+    document.getElementById('huecos-criticos-panel').style.display = 'block';
+    document.getElementById('btn-guardar-huecos').style.display = 'block';
+    document.getElementById('huecos-criticos-list').innerHTML = huecosCriticos.map((h, i) => {
+      const campo = typeof h === 'object' ? h.campo : h;
+      const pregunta = typeof h === 'object' ? h.pregunta : h;
+      const seccion = typeof h === 'object' ? h.seccion : '';
+      return `
+        <div class="campo-row">
+          <div class="campo-estado">❌</div>
+          <div class="campo-info">
+            <div class="campo-nombre">${campo}</div>
+            <div class="campo-valor">${pregunta}</div>
+            <div class="campo-input-wrap">
+              <input class="campo-input" id="hueco-${i}" data-campo="${campo}" data-seccion="${seccion}"
+                placeholder="Escribe la información aquí...">
+            </div>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // Propuestas de Claude
+  const todasPropuestas = Object.values(secciones)
+    .flatMap(s => (s.campos || []).filter(c => c.estado === 'PROPUESTA'));
+  if (todasPropuestas.length) {
+    const propuestasEl = document.createElement('div');
+    propuestasEl.style.marginTop = '16px';
+    propuestasEl.innerHTML = `<div style="font-family:var(--font-head);font-size:13px;font-weight:800;color:#FF8C00;margin-bottom:8px">💡 Propuestas de Claude — confirma o edita</div>`
+      + todasPropuestas.map((c, i) => `
+        <div class="campo-row">
+          <div class="campo-estado">💡</div>
+          <div class="campo-info">
+            <div class="campo-nombre">${c.campo}</div>
+            <div class="campo-fuente">Fuente: ${c.fuente}</div>
+            <div class="campo-input-wrap">
+              <input class="campo-input" id="prop-${i}" data-campo="${c.campo}" data-tipo="propuesta"
+                value="${c.valor || ''}" style="border-color:#FF8C00">
+            </div>
+          </div>
+        </div>`).join('');
+    document.getElementById('huecos-criticos-panel').style.display = 'block';
+    document.getElementById('btn-guardar-huecos').style.display = 'block';
+    document.getElementById('huecos-criticos-panel').appendChild(propuestasEl);
+  }
+}
+
+async function guardarHuecos() {
+  const btn = document.getElementById('btn-guardar-huecos');
+  btn.disabled = true;
+  btn.textContent = '⏳ Guardando...';
+
+  // Recolectar valores llenados
+  const respuestas = {};
+  document.querySelectorAll('.campo-input').forEach(input => {
+    if (input.value.trim()) respuestas[input.dataset.campo] = input.value.trim();
+  });
+
+  try {
+    // Guardar respuestas en la iniciativa
+    await fetch(`${API_BASE}/iniciativas/${ID}`, {
+      method: 'PUT',
+      headers: HEADERS,
+      body: JSON.stringify({ huecos_respuestas: respuestas })
+    });
+
+    // Re-validar
+    await fetch(`${API_BASE}/iniciativas/${ID}/validar`, {
+      method: 'POST', headers: HEADERS,
+      body: JSON.stringify({ etapa: 'validar_discovery' })
+    });
+
+    showAlert('Información guardada. Re-validando con IA...', 'info');
+    renderEtapas('VALIDANDO');
+    startPolling();
+  } catch(e) {
+    showAlert(`Error: ${e.message}`, 'warn');
+  }
+  btn.disabled = false;
+  btn.textContent = '💾 Guardar y Re-validar';
+}
+
+async function validarDiscovery() {
+  document.getElementById('btn-validar').disabled = true;
+  try {
+    const res = await fetch(`${API_BASE}/iniciativas/${ID}/validar`, {
+      method: 'POST', headers: HEADERS,
+      body: JSON.stringify({ etapa: 'validar_discovery' })
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    showAlert('Validación iniciada. Analizando documentos con IA...', 'info');
+    renderEtapas('VALIDANDO');
+    startPolling();
+  } catch(e) {
+    showAlert(`Error: ${e.message}`, 'warn');
+    document.getElementById('btn-validar').disabled = false;
+  }
+}
+
+async function generarPropuesta() {
+  document.getElementById('btn-propuesta').disabled = true;
+  try {
+    const res = await fetch(`${API_BASE}/iniciativas/${ID}/propuesta`, {
+      method: 'POST', headers: HEADERS
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    showAlert('Generando propuesta Word con costos AWS reales... (~60 segundos)', 'info');
+    startPolling();
+  } catch(e) {
+    showAlert(`Error: ${e.message}`, 'warn');
+    document.getElementById('btn-propuesta').disabled = false;
+  }
+}
+
+async function procesarIniciativa() {
+  document.getElementById('btn-procesar').disabled = true;
+  try {
+    const res = await fetch(`${API_BASE}/iniciativas/${ID}/procesar`, { method:'POST', headers: HEADERS });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    showAlert('Procesamiento iniciado.', 'success');
+    startPolling();
+  } catch (e) {
+    showAlert(`Error: ${e.message}`, 'warn');
+    document.getElementById('btn-procesar').disabled = false;
+  }
+}
+
+function startPolling() {
+  stopPolling();
+  pollTimer = setInterval(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/iniciativas/${ID}`, { headers: HEADERS });
+      if (!res.ok) return;
+      const d = await res.json();
+      render(d);
+    } catch(e) {}
+  }, 5000);
+}
+
+function stopPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+async function loadFicha() {
+  try {
+    const res = await fetch(`${API_BASE}/iniciativas/${ID}/ficha`, { headers: HEADERS });
+    if (!res.ok) return;
+    const f = await res.json();
+    document.getElementById('card-ficha').style.display = 'block';
+    document.getElementById('ficha-content').innerHTML = renderFicha(f);
+  } catch (e) {}
+}
+
+function renderFicha(f) {
+  const sections = [
+    ['Proyecto',f.proyecto],['Requisitos',f.requisitos],['Datos',f.datos],
+    ['Dependencias',f.dependencias],['Red',f.red],['Componentes',f.componentes],
+    ['Topología',f.topologia],['Migración',f.migracion],['DR',f.dr],['Restricciones',f.restricciones],
+  ];
+  return sections.filter(([,v]) => v && Object.keys(v).length).map(([title, obj]) => `
+    <div class="ficha-section">
+      <div class="ficha-section-title">${title}</div>
+      ${Object.entries(obj).filter(([,v]) => v !== null && v !== undefined && v !== '').map(([k,v]) => `
+        <div class="ficha-field">
+          <span class="ficha-key">${k.replace(/_/g,' ')}</span>
+          <span class="ficha-val">${Array.isArray(v) ? v.join(', ') : v}</span>
+        </div>`).join('')}
+    </div>`).join('');
+}
+
+function showAlert(msg, type) {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    container.style.cssText = 'position:fixed;bottom:24px;right:24px;display:flex;flex-direction:column;gap:10px;z-index:9999';
+    document.body.appendChild(container);
+  }
+  const colors = { success:{bg:'#00A651',icon:'✅'}, warn:{bg:'#FF8C00',icon:'⚠️'}, info:{bg:'#1B2CC1',icon:'ℹ️'} };
+  const { bg, icon } = colors[type] || colors.info;
+  const toast = document.createElement('div');
+  toast.style.cssText = `background:${bg};color:#fff;padding:14px 18px;border-radius:12px;font-size:13px;font-weight:600;font-family:var(--font-head);box-shadow:0 4px 16px rgba(0,0,0,0.2);display:flex;align-items:center;gap:10px;min-width:280px;max-width:360px`;
+  toast.innerHTML = `<span style="font-size:18px">${icon}</span><span style="flex:1">${msg}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 5000);
+}
+
+load();
+</script>
+<script src="js/sidebar.js"></script>
+</body>
+</html>

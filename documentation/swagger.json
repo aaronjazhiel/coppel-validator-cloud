@@ -1,0 +1,447 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Coppel Cloud Validator API",
+    "description": "API para gestión de iniciativas de arquitectura cloud. Permite crear iniciativas, subir insumos, procesar con IA y generar artefactos de salida.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Equipo de Arquitectura Cloud"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://1vo8syihoe.execute-api.us-east-1.amazonaws.com/prod",
+      "description": "Producción"
+    }
+  ],
+  "security": [
+    {
+      "ApiKeyAuth": []
+    }
+  ],
+  "paths": {
+    "/iniciativas": {
+      "post": {
+        "summary": "Crear iniciativa",
+        "description": "Crea una nueva iniciativa y devuelve URLs prefirmadas de S3 para subir los archivos de insumo.",
+        "operationId": "crearIniciativa",
+        "tags": ["Iniciativas"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CrearIniciativaRequest"
+              },
+              "example": {
+                "id_iniciativa": "INI-2025-001",
+                "nombre": "Migración Constancias Retención",
+                "ambiente": "Prod",
+                "solicitante": "Juan Pérez",
+                "descripcion": "Migración del sistema de constancias a AWS",
+                "nube": "AWS",
+                "business_tags": {
+                  "project": "AforeCoppel",
+                  "owner": "Arquitectura Cloud"
+                },
+                "archivos": {
+                  "discovery": ["quick_discovery.docx"],
+                  "diagrama": ["arquitectura.drawio.xml"],
+                  "transcripciones": ["sesion1.txt"],
+                  "componentes": ["inventario.xlsx"]
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Iniciativa creada exitosamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CrearIniciativaResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Iniciativa ya existente (idempotente), URLs regeneradas"
+          },
+          "400": {
+            "description": "Campos obligatorios faltantes o body inválido",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API Key inválida o faltante"
+          }
+        }
+      },
+      "get": {
+        "summary": "Listar iniciativas",
+        "description": "Retorna lista resumida de todas las iniciativas. Se puede filtrar por estado.",
+        "operationId": "listarIniciativas",
+        "tags": ["Iniciativas"],
+        "parameters": [
+          {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "description": "Filtrar por estado",
+            "schema": {
+              "type": "string",
+              "enum": ["INGESTA", "PROCESANDO", "EXTRAIDO", "EN_REVISION", "VALIDADO", "GENERADO", "ERROR"]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de iniciativas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListarIniciativasResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "API Key inválida o faltante"
+          }
+        }
+      }
+    },
+    "/iniciativas/{id}": {
+      "get": {
+        "summary": "Obtener detalle de iniciativa",
+        "description": "Retorna el detalle completo de una iniciativa incluyendo URLs de descarga para las salidas generadas.",
+        "operationId": "obtenerIniciativa",
+        "tags": ["Iniciativas"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID de la iniciativa"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detalle de la iniciativa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IniciativaDetalle"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Iniciativa no encontrada"
+          }
+        }
+      }
+    },
+    "/iniciativas/{id}/procesar": {
+      "post": {
+        "summary": "Procesar iniciativa",
+        "description": "Inicia la extracción asíncrona de la Ficha Técnica usando Claude. Lee los insumos de S3, los convierte a texto y extrae datos estructurados.",
+        "operationId": "procesarIniciativa",
+        "tags": ["Procesamiento"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID de la iniciativa"
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Procesamiento iniciado (asíncrono)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id_iniciativa": { "type": "string" },
+                    "status": { "type": "string", "example": "PROCESANDO" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "ID requerido" },
+          "404": { "description": "Iniciativa no encontrada" }
+        }
+      }
+    },
+    "/iniciativas/{id}/ficha": {
+      "get": {
+        "summary": "Obtener Ficha Técnica",
+        "description": "Retorna la Ficha Técnica extraída/editada de la iniciativa.",
+        "operationId": "obtenerFicha",
+        "tags": ["Ficha Técnica"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID de la iniciativa"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ficha Técnica completa",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FichaTecnica"
+                }
+              }
+            }
+          },
+          "404": { "description": "Ficha no encontrada (ejecutar procesar primero)" }
+        }
+      },
+      "put": {
+        "summary": "Actualizar Ficha Técnica",
+        "description": "Actualiza la Ficha Técnica manualmente. Versiona la ficha anterior automáticamente.",
+        "operationId": "actualizarFicha",
+        "tags": ["Ficha Técnica"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID de la iniciativa"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FichaTecnica"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Ficha actualizada",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "version": { "type": "integer" },
+                    "estado": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "422": { "description": "Validación Pydantic fallida" }
+        }
+      }
+    },
+    "/iniciativas/{id}/generar/{tipo}": {
+      "post": {
+        "summary": "Generar salida",
+        "description": "Genera un artefacto de salida a partir de la Ficha Técnica usando Claude. Proceso asíncrono.",
+        "operationId": "generarSalida",
+        "tags": ["Generación"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "ID de la iniciativa"
+          },
+          {
+            "name": "tipo",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "enum": ["diagrama", "documento", "costos"]
+            },
+            "description": "Tipo de salida: diagrama (draw.io XML), documento (Markdown), costos (CSV)"
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Generación iniciada (asíncrono)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id_iniciativa": { "type": "string" },
+                    "tipo": { "type": "string" },
+                    "status": { "type": "string", "example": "GENERANDO" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Tipo inválido" },
+          "404": { "description": "Iniciativa no encontrada" }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key",
+        "description": "API Key requerida para autenticar las peticiones"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": { "type": "string" }
+        }
+      },
+      "CrearIniciativaRequest": {
+        "type": "object",
+        "required": ["id_iniciativa", "nombre", "solicitante"],
+        "properties": {
+          "id_iniciativa": { "type": "string", "description": "Identificador único" },
+          "nombre": { "type": "string", "description": "Nombre del proyecto" },
+          "solicitante": { "type": "string", "description": "Persona que solicita" },
+          "ambiente": { "type": "string", "default": "Prod" },
+          "descripcion": { "type": "string" },
+          "nube": { "type": "string", "enum": ["AWS", "GCP", "Multi"], "default": "AWS" },
+          "business_tags": { "type": "object", "additionalProperties": { "type": "string" } },
+          "archivos": {
+            "type": "object",
+            "properties": {
+              "discovery": { "type": "array", "items": { "type": "string" } },
+              "diagrama": { "type": "array", "items": { "type": "string" } },
+              "transcripciones": { "type": "array", "items": { "type": "string" } },
+              "componentes": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      },
+      "CrearIniciativaResponse": {
+        "type": "object",
+        "properties": {
+          "id_iniciativa": { "type": "string" },
+          "upload_urls": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "filename": { "type": "string" },
+                  "key": { "type": "string" },
+                  "upload_url": { "type": "string", "format": "uri" }
+                }
+              }
+            }
+          }
+        }
+      },
+      "ListarIniciativasResponse": {
+        "type": "object",
+        "properties": {
+          "iniciativas": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id_iniciativa": { "type": "string" },
+                "nombre": { "type": "string" },
+                "ambiente": { "type": "string" },
+                "estado": { "type": "string" },
+                "completitud": { "type": "integer" },
+                "solicitante": { "type": "string" },
+                "fecha_creacion": { "type": "string", "format": "date-time" },
+                "fecha_actualizacion": { "type": "string", "format": "date-time" }
+              }
+            }
+          }
+        }
+      },
+      "IniciativaDetalle": {
+        "type": "object",
+        "properties": {
+          "id_iniciativa": { "type": "string" },
+          "nombre": { "type": "string" },
+          "descripcion": { "type": "string" },
+          "ambiente": { "type": "string" },
+          "solicitante": { "type": "string" },
+          "nube": { "type": "string" },
+          "estado": { "type": "string" },
+          "completitud": { "type": "integer" },
+          "huecos": { "type": "array", "items": { "type": "string" } },
+          "insumos": { "type": "array", "items": { "type": "object" } },
+          "salidas_urls": { "type": "object", "additionalProperties": { "type": "string", "format": "uri" } },
+          "fecha_creacion": { "type": "string", "format": "date-time" },
+          "fecha_actualizacion": { "type": "string", "format": "date-time" }
+        }
+      },
+      "FichaTecnica": {
+        "type": "object",
+        "description": "Estructura completa de la Ficha Técnica",
+        "properties": {
+          "proyecto": {
+            "type": "object",
+            "required": ["id_iniciativa"],
+            "properties": {
+              "id_iniciativa": { "type": "string" },
+              "nombre": { "type": "string" },
+              "descripcion": { "type": "string" },
+              "nube": { "type": "string" },
+              "ambiente": { "type": "string" }
+            }
+          },
+          "requisitos": { "type": "object" },
+          "datos": { "type": "object" },
+          "dependencias": { "type": "object" },
+          "red": { "type": "object" },
+          "componentes": { "type": "object" },
+          "topologia": { "type": "object" },
+          "migracion": { "type": "object" },
+          "dr": { "type": "object" },
+          "restricciones": { "type": "object" },
+          "validacion": {
+            "type": "object",
+            "properties": {
+              "completitud": { "type": "integer", "minimum": 0, "maximum": 100 },
+              "estado": { "type": "string" },
+              "huecos": { "type": "array", "items": { "type": "string" } },
+              "conflictos": { "type": "array", "items": { "type": "object" } }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    { "name": "Iniciativas", "description": "CRUD de iniciativas de arquitectura" },
+    { "name": "Procesamiento", "description": "Extracción de Ficha Técnica con IA" },
+    { "name": "Ficha Técnica", "description": "Consulta y edición de la Ficha Técnica" },
+    { "name": "Generación", "description": "Generación de artefactos (diagrama, documento, costos)" }
+  ]
+}

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CloudArch AI — Portal de Arquitectura Cloud</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .dash-grid { display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px; }
+    .dash-card { background:white;border-radius:var(--radius-lg);padding:20px;border:1.5px solid var(--c-gray-200);transition:box-shadow .2s; }
+    .dash-card:hover { box-shadow:var(--shadow-md); }
+    .dash-card-icon { width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;margin-bottom:12px; }
+    .dash-card-icon svg { width:20px;height:20px; }
+    .dash-card-value { font-family:var(--font-head);font-size:28px;font-weight:900;color:var(--c-gray-700); }
+    .dash-card-label { font-size:12px;color:var(--c-gray-500);font-weight:600;margin-top:2px; }
+    .ini-table { width:100%;border-collapse:collapse; }
+    .ini-table th { text-align:left;padding:10px 14px;font-size:11px;font-weight:800;color:var(--c-gray-500);text-transform:uppercase;letter-spacing:.3px;border-bottom:2px solid var(--c-gray-200);font-family:var(--font-head); }
+    .ini-table td { padding:12px 14px;border-bottom:1px solid var(--c-gray-200);font-size:13px;color:var(--c-gray-700); }
+    .ini-table tr:hover td { background:var(--c-gray-100); }
+    .ini-table tr { cursor:pointer; }
+    .estado-badge { display:inline-flex;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;font-family:var(--font-head); }
+    .estado-INGESTA { background:var(--c-info-bg);color:var(--c-info); }
+    .estado-INCOMPLETO { background:var(--c-warn-bg);color:var(--c-warn); }
+    .estado-DISCOVERY_OK,.estado-TRANSCRIPCIONES_OK,.estado-EXTRAIDO { background:var(--c-success-bg);color:var(--c-success); }
+    .estado-GENERADO { background:#E8F5E9;color:#2E7D32; }
+    .estado-VALIDANDO,.estado-EXTRAYENDO_SERVICIOS,.estado-GENERANDO_PROPUESTA { background:#FFF3E0;color:#E65100; }
+    .estado-ERROR_PROPUESTA { background:var(--c-danger-bg);color:var(--c-danger); }
+    .pct-bar { width:60px;height:6px;background:var(--c-gray-200);border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:6px; }
+    .pct-bar-fill { height:100%;border-radius:3px;background:var(--c-blue); }
+    .welcome-banner { background:linear-gradient(135deg,var(--c-blue),#2438E8);border-radius:var(--radius-lg);padding:28px 32px;color:white;margin-bottom:28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px; }
+    .welcome-title { font-family:var(--font-head);font-size:20px;font-weight:900; }
+    .welcome-sub { font-size:13px;opacity:.75;margin-top:4px; }
+    @media(max-width:768px) { .dash-grid { grid-template-columns:1fr 1fr; } }
+  </style>
+</head>
+<body>
+
+<div style="padding:28px">
+  <!-- Welcome banner -->
+  <div class="welcome-banner">
+    <div>
+      <div class="welcome-title">Portal de Arquitectura Cloud</div>
+      <div class="welcome-sub">Gestión de iniciativas, validación de documentos y generación de propuestas</div>
+    </div>
+    <a href="ingesta.html" class="btn btn-primary">+ Nueva Iniciativa</a>
+  </div>
+
+  <!-- Stats -->
+  <div class="dash-grid">
+    <div class="dash-card">
+      <div class="dash-card-icon" style="background:var(--c-blue-light)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#1B2CC1" stroke-width="2"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      </div>
+      <div class="dash-card-value" id="stat-total">—</div>
+      <div class="dash-card-label">Total Iniciativas</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-card-icon" style="background:#FFF3E0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#E65100" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      <div class="dash-card-value" id="stat-proceso">—</div>
+      <div class="dash-card-label">En Proceso</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-card-icon" style="background:#E8F5E9">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#2E7D32" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      <div class="dash-card-value" id="stat-generadas">—</div>
+      <div class="dash-card-label">Propuestas Generadas</div>
+    </div>
+    <div class="dash-card">
+      <div class="dash-card-icon" style="background:var(--c-danger-bg)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#D32F2F" stroke-width="2"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+      </div>
+      <div class="dash-card-value" id="stat-incompletas">—</div>
+      <div class="dash-card-label">Incompletas</div>
+    </div>
+  </div>
+
+  <!-- Tabla de iniciativas -->
+  <div class="dash-card" style="padding:0;overflow:hidden">
+    <div style="padding:20px 20px 0;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div style="font-family:var(--font-head);font-size:16px;font-weight:800;color:var(--c-gray-700)">Iniciativas Recientes</div>
+        <div style="font-size:12px;color:var(--c-gray-500)">Click en una fila para ver el detalle</div>
+      </div>
+      <a href="ingesta.html" class="btn btn-blue btn-sm">Ver todas</a>
+    </div>
+    <div style="padding:16px 20px 20px;overflow-x:auto">
+      <table class="ini-table">
+        <thead>
+          <tr><th>ID</th><th>Nombre</th><th>Solicitante</th><th>Estado</th><th>Completitud</th><th>Fecha</th></tr>
+        </thead>
+        <tbody id="ini-tbody">
+          <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--c-gray-500)">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = 'https://1vo8syihoe.execute-api.us-east-1.amazonaws.com/prod';
+const API_KEY  = '58kfc3qsCWalMqjcrE89a5xOn6FLfFt821ohMh1E';
+const HEADERS  = { 'x-api-key': API_KEY };
+
+async function load() {
+  try {
+    const res = await fetch(`${API_BASE}/iniciativas`, { headers: HEADERS });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const items = data.iniciativas || [];
+    renderStats(items);
+    renderTable(items);
+  } catch(e) {
+    document.getElementById('ini-tbody').innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--c-danger)">Error: ${e.message}</td></tr>`;
+  }
+}
+
+function renderStats(items) {
+  const enProceso = items.filter(i => ['VALIDANDO','EXTRAYENDO_SERVICIOS','GENERANDO_PROPUESTA','DISCOVERY_OK','TRANSCRIPCIONES_OK','EXTRAIDO'].includes(i.estado)).length;
+  const generadas = items.filter(i => i.estado === 'GENERADO').length;
+  const incompletas = items.filter(i => ['INCOMPLETO','ERROR_PROPUESTA'].includes(i.estado)).length;
+  document.getElementById('stat-total').textContent = items.length;
+  document.getElementById('stat-proceso').textContent = enProceso;
+  document.getElementById('stat-generadas').textContent = generadas;
+  document.getElementById('stat-incompletas').textContent = incompletas;
+}
+
+function renderTable(items) {
+  if (!items.length) {
+    document.getElementById('ini-tbody').innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--c-gray-500)">Sin iniciativas. <a href="ingesta.html" style="color:var(--c-blue);font-weight:700">Crear primera →</a></td></tr>`;
+    return;
+  }
+  document.getElementById('ini-tbody').innerHTML = items.map(i => {
+    const pct = i.completitud || 0;
+    const fecha = i.fecha_creacion ? new Date(i.fecha_creacion).toLocaleDateString('es-MX') : '—';
+    return `<tr onclick="location.href='paso1-validacion.html?id=${i.id_iniciativa}'">
+      <td style="font-family:var(--font-head);font-weight:700;color:var(--c-blue)">${i.id_iniciativa}</td>
+      <td style="font-weight:600">${i.nombre || '—'}</td>
+      <td>${i.solicitante || '—'}</td>
+      <td><span class="estado-badge estado-${i.estado}">${i.estado}</span></td>
+      <td><span class="pct-bar"><span class="pct-bar-fill" style="width:${pct}%"></span></span>${pct}%</td>
+      <td style="color:var(--c-gray-500)">${fecha}</td>
+    </tr>`;
+  }).join('');
+}
+
+load();
+</script>
+<script src="js/sidebar.js"></script>
+</body>
+</html>

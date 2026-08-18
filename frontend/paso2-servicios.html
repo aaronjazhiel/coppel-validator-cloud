@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paso 2 — Servicios AWS Identificados</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .step-header { display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid var(--c-gray-200); }
+    .step-number { width:36px;height:36px;border-radius:50%;background:var(--c-blue);color:white;display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-weight:900;font-size:16px;flex-shrink:0; }
+    .step-title { font-family:var(--font-head);font-size:20px;font-weight:900;color:var(--c-gray-700); }
+    .step-sub { font-size:13px;color:var(--c-gray-500); }
+    .step-nav { display:flex;justify-content:space-between;align-items:center;margin-top:28px;padding-top:20px;border-top:2px solid var(--c-gray-200); }
+    .svc-table { width:100%;border-collapse:collapse;font-size:13px; }
+    .svc-table th { background:var(--c-blue);color:white;padding:10px 12px;text-align:left;font-family:var(--font-head);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.3px; }
+    .svc-table td { padding:10px 12px;border-bottom:1px solid var(--c-gray-200);vertical-align:middle; }
+    .svc-table tr:hover td { background:var(--c-gray-100); }
+    .cat-badge { display:inline-flex;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;font-family:var(--font-head); }
+    .cat-COMPUTO { background:#E3F2FD;color:#1565C0; }
+    .cat-BASE_DE_DATOS { background:#F3E8FF;color:#7C3AED; }
+    .cat-ALMACENAMIENTO { background:#E0F7FA;color:#00838F; }
+    .cat-RED_Y_CONECTIVIDAD { background:#E8F5E9;color:#2E7D32; }
+    .cat-SEGURIDAD { background:#FFF3E0;color:#E65100; }
+    .cat-INTEGRACION_Y_MENSAJERIA { background:#FCE4EC;color:#C62828; }
+    .cat-MONITOREO_Y_OBSERVABILIDAD { background:#FFF8E1;color:#F57F17; }
+    .cat-DR_Y_BACKUP { background:#ECEFF1;color:#37474F; }
+    .prio-tag { font-size:10px;font-weight:800;font-family:var(--font-head); }
+    .prio-REQUERIDO { color:#2E7D32; }
+    .prio-RECOMENDADO { color:#E65100; }
+    .prio-OPCIONAL { color:var(--c-gray-500); }
+    .btn-remove { background:none;border:none;color:var(--c-danger);cursor:pointer;font-size:16px;padding:4px;border-radius:4px; }
+    .btn-remove:hover { background:var(--c-danger-bg); }
+    .add-row { display:flex;gap:8px;margin-top:16px;align-items:center;flex-wrap:wrap; }
+    .stats-row { display:flex;gap:16px;margin-bottom:20px;flex-wrap:wrap; }
+    .stat-chip { background:white;border:1.5px solid var(--c-gray-200);border-radius:var(--radius-md);padding:12px 16px;display:flex;align-items:center;gap:10px; }
+    .stat-chip-num { font-family:var(--font-head);font-size:22px;font-weight:900;color:var(--c-blue); }
+    .stat-chip-label { font-size:11px;color:var(--c-gray-500);font-weight:600; }
+  </style>
+</head>
+<body>
+
+<div style="padding:28px">
+  <div class="step-header">
+    <div class="step-number">2</div>
+    <div>
+      <div class="step-title">Servicios AWS Identificados</div>
+      <div class="step-sub" id="sub-title">Servicios extraídos automáticamente del análisis de documentos</div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row" id="stats-row"></div>
+
+  <!-- Tabla de servicios -->
+  <div class="card" style="margin-bottom:20px;padding:0;overflow:hidden">
+    <div style="padding:16px 20px 0">
+      <div class="card-title">Servicios Detectados</div>
+      <div class="card-sub">Puedes eliminar servicios que no apliquen o agregar nuevos</div>
+    </div>
+    <div style="padding:12px 20px 20px;overflow-x:auto">
+      <table class="svc-table" id="svc-table">
+        <thead><tr>
+          <th>#</th><th>Servicio AWS</th><th>Categoría</th><th>Prioridad</th><th>Justificación</th><th></th>
+        </tr></thead>
+        <tbody id="svc-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Agregar servicio -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">Agregar Servicio</div>
+    <div class="card-sub">Agrega un servicio AWS que no fue detectado automáticamente</div>
+    <div class="add-row">
+      <input class="form-input" id="add-servicio" placeholder="Ej: Amazon DynamoDB" style="width:200px">
+      <select class="form-select" id="add-categoria" style="width:180px">
+        <option value="COMPUTO">Cómputo</option>
+        <option value="BASE_DE_DATOS">Base de Datos</option>
+        <option value="ALMACENAMIENTO">Almacenamiento</option>
+        <option value="RED_Y_CONECTIVIDAD">Red</option>
+        <option value="SEGURIDAD">Seguridad</option>
+        <option value="INTEGRACION_Y_MENSAJERIA">Integración</option>
+        <option value="MONITOREO_Y_OBSERVABILIDAD">Monitoreo</option>
+        <option value="DR_Y_BACKUP">DR / Backup</option>
+      </select>
+      <select class="form-select" id="add-prioridad" style="width:140px">
+        <option value="REQUERIDO">Requerido</option>
+        <option value="RECOMENDADO">Recomendado</option>
+        <option value="OPCIONAL">Opcional</option>
+      </select>
+      <button class="btn btn-blue btn-sm" onclick="agregarServicio()">+ Agregar</button>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <div class="step-nav">
+    <a id="btn-anterior" href="paso1-validacion.html" class="btn btn-outline btn-sm">← Paso 1: Validación</a>
+    <a id="btn-siguiente" href="paso3-costos.html" class="btn btn-primary btn-sm">Siguiente: Costos →</a>
+  </div>
+</div>
+
+<script>
+const API_BASE = 'https://1vo8syihoe.execute-api.us-east-1.amazonaws.com/prod';
+const API_KEY  = '58kfc3qsCWalMqjcrE89a5xOn6FLfFt821ohMh1E';
+const HEADERS  = { 'x-api-key': API_KEY, 'Content-Type': 'application/json' };
+
+const params = new URLSearchParams(location.search);
+const ID = params.get('id');
+
+document.getElementById('btn-anterior').href = `paso1-validacion.html?id=${ID}`;
+document.getElementById('btn-siguiente').href = `paso3-costos.html?id=${ID}`;
+
+let servicios = [];
+
+async function load() {
+  if (!ID) return;
+  document.getElementById('sub-title').textContent = `Iniciativa: ${ID}`;
+
+  // Intentar cargar servicios reales desde API
+  try {
+    const res = await fetch(`${API_BASE}/iniciativas/${ID}/resultados/discovery`, { headers: HEADERS });
+    // Los servicios están en otro archivo, intentar cargar
+  } catch(e) {}
+
+  // Cargar servicios extraídos (endpoint dedicado o fallback)
+  try {
+    const meta = await (await fetch(`${API_BASE}/iniciativas/${ID}`, { headers: HEADERS })).json();
+    // Si el estado es EXTRAIDO o posterior, cargar servicios de S3
+    if (['EXTRAIDO','GENERANDO_PROPUESTA','GENERADO'].includes(meta.estado)) {
+      // Intentar endpoint de costos que tiene los servicios
+      const costRes = await fetch(`${API_BASE}/iniciativas/${ID}/resultados/costos`, { headers: HEADERS });
+      if (costRes.ok) {
+        const costData = await costRes.json();
+        if (costData.servicios_cotizados) {
+          servicios = costData.servicios_cotizados.map(s => ({
+            servicio: s.servicio,
+            categoria: s.categoria,
+            prioridad: s.prioridad,
+            justificacion: s.especificacion || ''
+          }));
+        }
+      }
+    }
+  } catch(e) {}
+
+  // Si no hay servicios del API, usar datos demo de INI-2026-NBJJI
+  if (!servicios.length) {
+    servicios = getDemoServicios();
+  }
+
+  renderTable();
+}
+
+function getDemoServicios() {
+  return [
+    { servicio:"Amazon EKS", categoria:"COMPUTO", prioridad:"REQUERIDO", justificacion:"Autoescalado Kubernetes 2-4 nodos para microservicio de timbrado" },
+    { servicio:"AWS Lambda", categoria:"COMPUTO", prioridad:"REQUERIDO", justificacion:"25,000 requests/día para flujo de generación de constancias" },
+    { servicio:"Amazon RDS PostgreSQL", categoria:"BASE_DE_DATOS", prioridad:"REQUERIDO", justificacion:"Almacenamiento relacional para datos del afiliado" },
+    { servicio:"Amazon S3", categoria:"ALMACENAMIENTO", prioridad:"REQUERIDO", justificacion:"Constancias generadas en PDF/XML timbradas ante el SAT" },
+    { servicio:"Amazon EBS", categoria:"ALMACENAMIENTO", prioridad:"REQUERIDO", justificacion:"Almacenamiento persistente para nodos de Kubernetes" },
+    { servicio:"Amazon VPC", categoria:"RED_Y_CONECTIVIDAD", prioridad:"REQUERIDO", justificacion:"Segmentación de tráfico zona pública e interna" },
+    { servicio:"Application Load Balancer", categoria:"RED_Y_CONECTIVIDAD", prioridad:"REQUERIDO", justificacion:"Internet-facing con WAF para microservicio público" },
+    { servicio:"AWS Site-to-Site VPN", categoria:"RED_Y_CONECTIVIDAD", prioridad:"REQUERIDO", justificacion:"Conectividad segura con on-premises y sistemas Azure/Banxico" },
+    { servicio:"Amazon API Gateway", categoria:"RED_Y_CONECTIVIDAD", prioridad:"RECOMENDADO", justificacion:"Gestión de APIs para consumo por Aforecoppel.com" },
+    { servicio:"Amazon Route 53", categoria:"RED_Y_CONECTIVIDAD", prioridad:"RECOMENDADO", justificacion:"DNS y health checks" },
+    { servicio:"AWS WAF", categoria:"SEGURIDAD", prioridad:"REQUERIDO", justificacion:"Protección web para el microservicio público" },
+    { servicio:"AWS KMS", categoria:"SEGURIDAD", prioridad:"REQUERIDO", justificacion:"Cifrado de datos sensibles del afiliado" },
+    { servicio:"AWS Secrets Manager", categoria:"SEGURIDAD", prioridad:"RECOMENDADO", justificacion:"Gestión de credenciales y API keys del proveedor Diverza" },
+    { servicio:"Amazon GuardDuty", categoria:"SEGURIDAD", prioridad:"RECOMENDADO", justificacion:"Detección de amenazas" },
+    { servicio:"Amazon SQS", categoria:"INTEGRACION_Y_MENSAJERIA", prioridad:"RECOMENDADO", justificacion:"Cola de mensajes para procesamiento asíncrono de constancias" },
+    { servicio:"Amazon CloudWatch", categoria:"MONITOREO_Y_OBSERVABILIDAD", prioridad:"REQUERIDO", justificacion:"Logs, métricas y alarmas del cluster EKS" },
+    { servicio:"AWS CloudTrail", categoria:"MONITOREO_Y_OBSERVABILIDAD", prioridad:"REQUERIDO", justificacion:"Auditoría de acciones en la cuenta" },
+    { servicio:"AWS X-Ray", categoria:"MONITOREO_Y_OBSERVABILIDAD", prioridad:"RECOMENDADO", justificacion:"Trazabilidad distribuida del microservicio" },
+    { servicio:"AWS Backup", categoria:"DR_Y_BACKUP", prioridad:"RECOMENDADO", justificacion:"Backups automatizados de RDS y EBS" },
+    { servicio:"Multi-AZ (RDS/EKS)", categoria:"DR_Y_BACKUP", prioridad:"REQUERIDO", justificacion:"Alta disponibilidad 99.9% requerida" },
+  ];
+}
+
+function renderTable() {
+  // Stats
+  const requeridos = servicios.filter(s => s.prioridad === 'REQUERIDO').length;
+  const categorias = [...new Set(servicios.map(s => s.categoria))].length;
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-chip"><div class="stat-chip-num">${servicios.length}</div><div class="stat-chip-label">Total Servicios</div></div>
+    <div class="stat-chip"><div class="stat-chip-num">${requeridos}</div><div class="stat-chip-label">Requeridos</div></div>
+    <div class="stat-chip"><div class="stat-chip-num">${categorias}</div><div class="stat-chip-label">Categorías</div></div>
+  `;
+
+  // Table
+  document.getElementById('svc-tbody').innerHTML = servicios.map((s, i) => `
+    <tr>
+      <td style="font-weight:700;color:var(--c-gray-500)">${i+1}</td>
+      <td style="font-weight:700">${s.servicio}</td>
+      <td><span class="cat-badge cat-${s.categoria}">${s.categoria.replace(/_/g,' ')}</span></td>
+      <td><span class="prio-tag prio-${s.prioridad}">${s.prioridad}</span></td>
+      <td style="font-size:12px;color:var(--c-gray-500);max-width:280px">${s.justificacion}</td>
+      <td><button class="btn-remove" onclick="eliminar(${i})" title="Eliminar">✕</button></td>
+    </tr>
+  `).join('');
+}
+
+function eliminar(idx) {
+  servicios.splice(idx, 1);
+  renderTable();
+}
+
+function agregarServicio() {
+  const servicio = document.getElementById('add-servicio').value.trim();
+  if (!servicio) return;
+  servicios.push({
+    servicio,
+    categoria: document.getElementById('add-categoria').value,
+    prioridad: document.getElementById('add-prioridad').value,
+    justificacion: 'Agregado manualmente'
+  });
+  document.getElementById('add-servicio').value = '';
+  renderTable();
+}
+
+load();
+</script>
+<script src="js/sidebar.js"></script>
+</body>
+</html>

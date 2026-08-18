@@ -1,0 +1,78 @@
+TRANSCRIPCIÓN — Sesión de Discovery #1
+Fecha: 2026-06-18
+Participantes: Juan Pérez (Solicitante), María González (Arquitecta Cloud), Carlos Ruiz (Líder Proyecto), Pedro Martínez (TI)
+Duración: 45 min
+
+---
+
+[María González]: Bueno, empecemos. Juan, cuéntanos cuál es la necesidad del proyecto.
+
+[Juan Pérez]: Mira, actualmente el sistema de Estadística de Venta Mensual corre en servidores on-premises que ya están al límite. Tenemos problemas de rendimiento cada cierre de mes cuando se procesan los reportes consolidados. El sistema atiende a toda la operación de retail — más de 1,500 tiendas generan datos diarios que se consolidan mensualmente.
+
+[María González]: ¿Cuántos usuarios concurrentes manejan?
+
+[Juan Pérez]: En operación normal unos 200 usuarios, pero en cierre de mes sube a 800-1,000 porque todos los gerentes regionales entran a consultar. Ahí es donde truena.
+
+[Carlos Ruiz]: El problema principal es que el proceso batch de consolidación tarda 14 horas actualmente y la ventana de mantenimiento es de 8 horas. Ya no alcanza.
+
+[María González]: Entendido. ¿Qué base de datos usan actualmente?
+
+[Pedro Martínez]: PostgreSQL 14 en un servidor dedicado con 16 vCPU y 64GB RAM. El volumen de la base es de aproximadamente 2.3 TB con crecimiento de 50GB mensuales. También tenemos un servidor de aplicación con RHEL 9.4, 4 vCPU y 12GB RAM que corre el backend en Java Spring Boot.
+
+[María González]: ¿Y el frontend?
+
+[Pedro Martínez]: Es una aplicación Angular que se sirve desde un servidor Windows 2019 con IIS. Ese servidor tiene 8 vCPU y 16GB RAM. También maneja las APIs REST que consumen las tiendas para enviar datos.
+
+[Juan Pérez]: Importante: necesitamos que el sistema esté disponible 24/7. El SLA actual es 99.5% pero queremos subir a 99.9% mínimo. Las tiendas envían datos cada hora y no podemos perder esa información.
+
+[María González]: ¿Tienen algún mecanismo de DR actualmente?
+
+[Carlos Ruiz]: Honestamente no. Tenemos backups diarios pero si se cae el servidor principal, tardamos entre 4 y 6 horas en restaurar. Eso es inaceptable para el negocio.
+
+[María González]: OK, entonces necesitamos definir RPO y RTO. ¿Cuánta pérdida de datos pueden tolerar?
+
+[Juan Pérez]: Máximo 1 hora de datos. Y el tiempo de recuperación no puede ser mayor a 30 minutos.
+
+[María González]: Perfecto, RPO de 1 hora y RTO de 30 minutos. Eso nos lleva a una arquitectura Multi-AZ con réplicas de lectura. ¿Hay integraciones con otros sistemas?
+
+[Pedro Martínez]: Sí, varias. El sistema recibe datos de:
+1. SAP — envía información de ventas cada hora vía API REST
+2. Sistema de Inventarios — consulta stock en tiempo real
+3. Portal de Gerentes — aplicación móvil que consume APIs del backend
+4. Datawarehouse corporativo — extracción nocturna de datos consolidados
+
+[María González]: ¿Esas integraciones son por VPN o internet público?
+
+[Pedro Martínez]: SAP y el DWH van por red interna. El portal de gerentes va por internet con autenticación OAuth2. El sistema de inventarios es por API interna también.
+
+[Carlos Ruiz]: Algo importante que no hemos mencionado: hay un requerimiento de seguridad de que todos los datos deben estar cifrados en reposo y en tránsito. Somos PCI-DSS porque manejamos datos de transacciones.
+
+[María González]: Entendido. Entonces KMS para cifrado, WAF para protección del endpoint público, y Secrets Manager para las credenciales. ¿Tienen alguna preferencia de nube?
+
+[Juan Pérez]: AWS. Ya tenemos la cuenta corporativa y el equipo de seguridad ya tiene sus herramientas configuradas ahí — GuardDuty, Security Hub, CloudTrail.
+
+[María González]: Perfecto. Entonces la propuesta sería:
+- EC2 para el servidor de aplicación (RHEL) y el frontend (Windows)
+- RDS PostgreSQL Multi-AZ para la base de datos
+- S3 para almacenamiento de reportes generados
+- CloudWatch para monitoreo
+- AWS Backup para respaldos automatizados
+
+[Pedro Martínez]: ¿Y para el proceso batch que tarda 14 horas? ¿Hay forma de acelerarlo?
+
+[María González]: Podemos evaluar usar instancias más grandes durante el batch o incluso paralelizar con Lambda. Pero eso sería una optimización posterior. Para la migración inicial haríamos Lift & Shift y después optimizamos.
+
+[Carlos Ruiz]: Me parece bien. ¿Cuándo podríamos tener la propuesta de arquitectura?
+
+[María González]: Dame una semana para armar la propuesta con costos. Necesito que me confirmen el presupuesto asignado.
+
+[Juan Pérez]: El presupuesto aprobado es de $15,000 USD mensuales máximo. El centro de costos es 234190 — "06 DESARROLLO DE SOLS TI AFORE".
+
+[María González]: Perfecto. Una última pregunta: ¿el proyecto es nuevo o es migración de algo existente?
+
+[Carlos Ruiz]: Es migración. El sistema lleva 5 años corriendo on-premises. Queremos moverlo tal cual a la nube primero y después modernizar.
+
+[María González]: OK, estrategia Lift & Shift inicial. Listo, tengo todo lo que necesito. Les mando la propuesta la próxima semana.
+
+---
+FIN DE TRANSCRIPCIÓN

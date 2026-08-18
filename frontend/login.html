@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — CloudArch AI</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    body { background:linear-gradient(135deg, var(--c-blue) 0%, #2438E8 60%, #0d1a8a 100%);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px; }
+    .login-card { background:white;border-radius:var(--radius-xl);padding:40px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.3); }
+    .login-logo { display:flex;align-items:center;gap:12px;justify-content:center;margin-bottom:32px; }
+    .login-logo-dots { display:flex;gap:5px; }
+    .login-logo-dots span { width:12px;height:12px;border-radius:50%;background:var(--c-yellow); }
+    .login-logo-dots span:nth-child(2) { opacity:.7; }
+    .login-logo-dots span:nth-child(3) { opacity:.4; }
+    .login-logo-text { font-family:var(--font-head);font-size:24px;font-weight:900;color:var(--c-blue); }
+    .login-logo-text sub { font-size:11px;color:var(--c-yellow);margin-left:3px; }
+    .login-title { font-family:var(--font-head);font-size:18px;font-weight:800;color:var(--c-gray-700);text-align:center;margin-bottom:4px; }
+    .login-sub { font-size:13px;color:var(--c-gray-500);text-align:center;margin-bottom:28px; }
+    .login-form .form-group { margin-bottom:16px; }
+    .login-form .form-label { font-size:12px; }
+    .login-form .form-input { padding:12px 14px;font-size:14px; }
+    .login-btn { width:100%;padding:14px;font-size:15px;margin-top:8px; }
+    .login-error { display:none;background:var(--c-danger-bg);color:var(--c-danger);padding:10px 14px;border-radius:var(--radius-md);font-size:13px;font-weight:600;margin-bottom:16px;text-align:center; }
+    .login-footer { text-align:center;margin-top:24px;font-size:11px;color:var(--c-gray-500); }
+    .login-badge { display:inline-flex;align-items:center;gap:6px;background:var(--c-blue-light);color:var(--c-blue);padding:4px 12px;border-radius:20px;font-size:11px;font-weight:700;font-family:var(--font-head);margin-top:12px; }
+  </style>
+</head>
+<body>
+
+<div class="login-card">
+  <div class="login-logo">
+    <div class="login-logo-dots"><span></span><span></span><span></span></div>
+    <div class="login-logo-text">CloudArch<sub>AI</sub></div>
+  </div>
+
+  <div class="login-title">Iniciar Sesión</div>
+  <div class="login-sub">Portal de Arquitectura Cloud — Acceso restringido</div>
+
+  <div class="login-error" id="login-error">Usuario o contraseña incorrectos</div>
+
+  <form class="login-form" onsubmit="return doLogin(event)">
+    <div class="form-group">
+      <label class="form-label">Usuario</label>
+      <input class="form-input" id="login-user" type="text" placeholder="Ingresa tu usuario" autocomplete="username" required value="admin">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Contraseña</label>
+      <input class="form-input" id="login-pass" type="password" placeholder="••••••••" autocomplete="current-password" required value="CloudArch2026">
+    </div>
+    <button type="submit" class="btn btn-primary login-btn">
+      Ingresar al Portal
+    </button>
+  </form>
+
+  <div class="login-footer">
+    <span class="login-badge">🔒 Área de Arquitectura Cloud</span>
+  </div>
+</div>
+
+<script>
+const USERS = {
+  'admin': 'CloudArch2026',
+  'arquitecto': 'Coppel2026!',
+  'demo': 'demo123'
+};
+
+function doLogin(e) {
+  e.preventDefault();
+  const user = document.getElementById('login-user').value.trim();
+  const pass = document.getElementById('login-pass').value;
+
+  if (USERS[user] && USERS[user] === pass) {
+    sessionStorage.setItem('cloudarch_auth', user);
+    window.location.href = 'index.html';
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+    document.getElementById('login-pass').value = '';
+    setTimeout(() => { document.getElementById('login-error').style.display = 'none'; }, 3000);
+  }
+  return false;
+}
+
+// Si ya está autenticado, redirigir
+if (sessionStorage.getItem('cloudarch_auth')) {
+  window.location.href = 'index.html';
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Listado de Iniciativas — CloudArch AI</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .filtros { display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap; }
+    .ini-table { width:100%;border-collapse:collapse; }
+    .ini-table th { text-align:left;padding:10px 14px;font-size:11px;font-weight:800;color:var(--c-gray-500);text-transform:uppercase;letter-spacing:.3px;border-bottom:2px solid var(--c-gray-200);font-family:var(--font-head); }
+    .ini-table td { padding:12px 14px;border-bottom:1px solid var(--c-gray-200);font-size:13px;color:var(--c-gray-700); }
+    .ini-table tr:hover td { background:var(--c-gray-100); }
+    .ini-table tr { cursor:pointer; }
+    .status-badge { display:inline-flex;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;font-family:var(--font-head); }
+    .status-INGESTA { background:var(--c-info-bg);color:var(--c-info); }
+    .status-INCOMPLETO { background:var(--c-warn-bg);color:var(--c-warn); }
+    .status-DISCOVERY_OK,.status-TRANSCRIPCIONES_OK,.status-EXTRAIDO { background:var(--c-success-bg);color:var(--c-success); }
+    .status-GENERADO { background:#E8F5E9;color:#2E7D32; }
+    .status-VALIDANDO,.status-EXTRAYENDO_SERVICIOS,.status-GENERANDO_PROPUESTA { background:#FFF3E0;color:#E65100; }
+    .status-ERROR,.status-ERROR_PROPUESTA { background:var(--c-danger-bg);color:var(--c-danger); }
+    .pct-bar { width:60px;height:6px;background:var(--c-gray-200);border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:6px; }
+    .pct-bar-fill { height:100%;border-radius:3px;background:var(--c-blue); }
+  </style>
+</head>
+<body>
+
+<div style="padding:28px">
+  <h1 style="font-family:var(--font-head);font-size:22px;font-weight:900;color:var(--c-gray-700);margin-bottom:4px">Listado de Iniciativas</h1>
+  <p style="font-size:13px;color:var(--c-gray-500);margin-bottom:24px">Todas las iniciativas registradas en el sistema</p>
+
+  <div class="filtros">
+    <select class="form-select" id="filtro-estado" style="width:180px" onchange="cargar()">
+      <option value="">Todos los estados</option>
+      <option value="INGESTA">Ingesta</option>
+      <option value="INCOMPLETO">Incompleto</option>
+      <option value="DISCOVERY_OK">Discovery OK</option>
+      <option value="EXTRAIDO">Extraído</option>
+      <option value="GENERADO">Generado</option>
+      <option value="ERROR">Error</option>
+    </select>
+    <button class="btn btn-outline btn-sm" onclick="cargar()">Refrescar</button>
+    <a href="ingesta.html" class="btn btn-primary btn-sm" style="margin-left:auto">+ Nueva Iniciativa</a>
+  </div>
+
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="padding:16px 20px;overflow-x:auto">
+      <table class="ini-table">
+        <thead><tr>
+          <th>ID</th><th>Nombre</th><th>Ambiente</th><th>Estado</th><th>Completitud</th><th>Actualización</th><th></th>
+        </tr></thead>
+        <tbody id="tbody">
+          <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--c-gray-500)">Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = 'https://1vo8syihoe.execute-api.us-east-1.amazonaws.com/prod';
+const API_KEY  = '58kfc3qsCWalMqjcrE89a5xOn6FLfFt821ohMh1E';
+const HEADERS  = { 'x-api-key': API_KEY };
+
+async function cargar() {
+  const estado = document.getElementById('filtro-estado').value;
+  const qs = estado ? `?estado=${estado}` : '';
+  try {
+    const res = await fetch(`${API_BASE}/iniciativas${qs}`, { headers: HEADERS });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    render(data.iniciativas || []);
+  } catch(e) {
+    document.getElementById('tbody').innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--c-danger)">Error: ${e.message}</td></tr>`;
+  }
+}
+
+function render(items) {
+  if (!items.length) {
+    document.getElementById('tbody').innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--c-gray-500)">Sin resultados</td></tr>`;
+    return;
+  }
+  document.getElementById('tbody').innerHTML = items.map(i => {
+    const pct = i.completitud || 0;
+    const fecha = i.fecha_actualizacion ? new Date(i.fecha_actualizacion).toLocaleString('es-MX') : '—';
+    return `<tr onclick="location.href='paso1-validacion.html?id=${i.id_iniciativa}'">
+      <td style="font-family:var(--font-head);font-weight:700;color:var(--c-blue)">${i.id_iniciativa}</td>
+      <td style="font-weight:600">${i.nombre || '—'}</td>
+      <td>${i.ambiente || '—'}</td>
+      <td><span class="status-badge status-${i.estado}">${i.estado}</span></td>
+      <td><span class="pct-bar"><span class="pct-bar-fill" style="width:${pct}%"></span></span>${pct}%</td>
+      <td style="font-size:11px;color:var(--c-gray-500)">${fecha}</td>
+      <td><a href="paso1-validacion.html?id=${i.id_iniciativa}" class="btn btn-outline btn-sm" style="padding:4px 10px;font-size:11px" onclick="event.stopPropagation()">Ver →</a></td>
+    </tr>`;
+  }).join('');
+}
+
+cargar();
+</script>
+<script src="js/sidebar.js"></script>
+</body>
+</html>

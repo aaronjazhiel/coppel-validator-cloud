@@ -1,0 +1,36 @@
+{
+  "mcpServers": {
+    "aws-pricing": {
+      "command": "python3",
+      "args": ["mcp/pricing_server.py"],
+      "env": {
+        "AWS_REGION": "us-east-1",
+        "AWS_PROFILE": "default"
+      }
+    },
+    "aws-architecture": {
+      "command": "python3",
+      "args": ["mcp/architecture_server.py"],
+      "env": {
+        "AWS_REGION": "us-east-1"
+      }
+    },
+    "document-generator": {
+      "command": "python3",
+      "args": ["mcp/document_server.py"],
+      "env": {
+        "BUCKET_NAME": "coppel-cloud-iniciativas",
+        "AWS_REGION": "us-east-1"
+      }
+    },
+    "initiative-manager": {
+      "command": "python3",
+      "args": ["mcp/initiative_server.py"],
+      "env": {
+        "BUCKET_NAME": "coppel-cloud-iniciativas",
+        "AWS_REGION": "us-east-1",
+        "API_URL": "https://1vo8syihoe.execute-api.us-east-1.amazonaws.com/prod"
+      }
+    }
+  }
+}

@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Paso 1 — Validación de Documentos</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .step-header { display:flex;align-items:center;gap:16px;margin-bottom:24px;padding-bottom:16px;border-bottom:2px solid var(--c-gray-200); }
+    .step-number { width:36px;height:36px;border-radius:50%;background:var(--c-blue);color:white;display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-weight:900;font-size:16px;flex-shrink:0; }
+    .step-title { font-family:var(--font-head);font-size:20px;font-weight:900;color:var(--c-gray-700); }
+    .step-sub { font-size:13px;color:var(--c-gray-500); }
+    .step-nav { display:flex;justify-content:space-between;align-items:center;margin-top:28px;padding-top:20px;border-top:2px solid var(--c-gray-200); }
+    .score-big { text-align:center;margin:20px 0; }
+    .score-big-num { font-family:var(--font-head);font-size:56px;font-weight:900; }
+    .score-big-label { font-size:13px;color:var(--c-gray-500);font-weight:600; }
+    .seccion-grid { display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:20px 0; }
+    .seccion-card { background:var(--c-gray-100);border-radius:var(--radius-md);padding:14px 16px;border-left:4px solid var(--c-gray-300); }
+    .seccion-card.ok { border-left-color:#00A651; }
+    .seccion-card.warn { border-left-color:#FF8C00; }
+    .seccion-card.fail { border-left-color:#E53935; }
+    .seccion-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:6px; }
+    .seccion-nombre { font-size:13px;font-weight:700;color:var(--c-gray-700);font-family:var(--font-head); }
+    .seccion-pct { font-size:13px;font-weight:800;font-family:var(--font-head); }
+    .seccion-pct.ok { color:#00A651; } .seccion-pct.warn { color:#FF8C00; } .seccion-pct.fail { color:#E53935; }
+    .seccion-bar { height:5px;background:var(--c-gray-200);border-radius:3px;overflow:hidden;margin-bottom:8px; }
+    .seccion-bar-fill { height:100%;border-radius:3px; }
+    .campo-item { font-size:12px;color:var(--c-gray-500);padding:2px 0;display:flex;gap:6px; }
+    .campo-item.completo { color:var(--c-gray-500); }
+    .campo-item.faltante { color:#E53935;font-weight:600; }
+    .insumos-list { display:flex;flex-direction:column;gap:8px;margin:16px 0; }
+    .insumo-chip { display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--c-gray-100);border-radius:var(--radius-md); }
+    .insumo-chip-icon { width:32px;height:32px;background:var(--c-blue-light);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+    .insumo-chip-icon svg { width:16px;height:16px;color:var(--c-blue); }
+    .insumo-chip-name { font-size:13px;font-weight:600;color:var(--c-gray-700); }
+    .insumo-chip-meta { font-size:11px;color:var(--c-gray-500); }
+    .alert-box { padding:14px 18px;border-radius:var(--radius-md);font-size:13px;font-weight:600;display:flex;align-items:center;gap:10px;margin-bottom:16px; }
+    .alert-success { background:var(--c-success-bg);color:var(--c-success);border:1px solid #B2DFDB; }
+    .alert-warn { background:var(--c-warn-bg);color:#E65100;border:1px solid #FFE0B2; }
+    .processing-overlay { position:fixed;inset:0;background:rgba(255,255,255,0.92);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px; }
+    .processing-gear { width:64px;height:64px;animation:spin 2s linear infinite;color:var(--c-blue); }
+    @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+    .processing-text { font-family:var(--font-head);font-size:18px;font-weight:800;color:var(--c-gray-700); }
+    .processing-sub { font-size:13px;color:var(--c-gray-500);text-align:center;max-width:320px; }
+    .processing-timer { font-family:var(--font-head);font-size:14px;font-weight:700;color:var(--c-blue);margin-top:4px; }
+    .processing-dots::after { content:'';animation:dots 1.5s steps(4,end) infinite; }
+    @keyframes dots { 0%{content:''} 25%{content:'.'} 50%{content:'..'} 75%{content:'...'} }
+    .mini-drop { position:relative;border:2px dashed var(--c-gray-300);border-radius:var(--radius-md);padding:16px 12px;text-align:center;cursor:pointer;transition:all .2s;background:var(--c-gray-100); }
+    .mini-drop:hover { border-color:var(--c-blue);background:var(--c-blue-light); }
+    .mini-drop.has-file { border-color:#00A651;background:#E6F7EE; }
+    .mini-drop-icon { font-size:24px;margin-bottom:4px; }
+    .mini-drop-label { font-size:12px;font-weight:700;color:var(--c-gray-700);font-family:var(--font-head); }
+    .mini-drop-hint { font-size:10px;color:var(--c-gray-500); }
+    .upload-queue-item { display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--c-blue-light);border-radius:6px;font-size:12px;color:var(--c-blue);font-weight:600;margin-bottom:4px; }
+    .upload-queue-item .remove { cursor:pointer;margin-left:auto;color:var(--c-danger);font-weight:700; }
+    @media(max-width:768px) { .seccion-grid { grid-template-columns:1fr; } #upload-zones { grid-template-columns:1fr; } }
+  </style>
+</head>
+<body>
+
+<div style="padding:28px">
+  <!-- Step Header -->
+  <div class="step-header">
+    <div class="step-number">1</div>
+    <div>
+      <div class="step-title">Validación de Documentos</div>
+      <div class="step-sub" id="sub-title">Analizando completitud del Quick Discovery y transcripciones</div>
+    </div>
+  </div>
+
+  <!-- Alert de resultado -->
+  <div id="alert-area"></div>
+
+  <!-- Insumos cargados -->
+  <div class="card" style="margin-bottom:20px">
+    <div class="card-title">Documentos Cargados</div>
+    <div class="card-sub">Archivos subidos para esta iniciativa</div>
+    <div class="insumos-list" id="insumos-list"></div>
+    <div id="missing-docs" style="display:none;margin-top:12px"></div>
+
+    <!-- Zona de carga inline -->
+    <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--c-gray-200)">
+      <div style="font-size:13px;font-weight:700;color:var(--c-gray-700);margin-bottom:10px;font-family:var(--font-head)">Agregar documentos</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px" id="upload-zones">
+        <div class="mini-drop" data-tipo="discovery">
+          <input type="file" accept=".docx" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%">
+          <div class="mini-drop-icon">📄</div>
+          <div class="mini-drop-label">Quick Discovery</div>
+          <div class="mini-drop-hint">.docx</div>
+        </div>
+        <div class="mini-drop" data-tipo="componentes">
+          <input type="file" accept=".xlsx" style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%">
+          <div class="mini-drop-icon">📊</div>
+          <div class="mini-drop-label">Componentes N2</div>
+          <div class="mini-drop-hint">.xlsx</div>
+        </div>
+        <div class="mini-drop" data-tipo="transcripciones">
+          <input type="file" accept=".txt,.md" multiple style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%">
+          <div class="mini-drop-icon">📝</div>
+          <div class="mini-drop-label">Transcripciones</div>
+          <div class="mini-drop-hint">.txt / .md (múltiples)</div>
+        </div>
+      </div>
+      <div id="upload-queue" style="margin-top:10px"></div>
+      <button class="btn btn-blue btn-sm" id="btn-subir" onclick="subirArchivos()" style="display:none;margin-top:12px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M17 8l-5-5-5 5M12 3v12"/></svg>
+        Subir archivos
+      </button>
+    </div>
+  </div>
+
+  <!-- Score general -->
+  <div class="card" style="margin-bottom:20px" id="card-discovery">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div>
+        <div class="card-title">Resultado del Análisis — Quick Discovery</div>
+        <div class="card-sub" style="margin-bottom:0">Completitud evaluada por IA sobre el Quick Discovery</div>
+      </div>
+      <button class="btn btn-blue btn-sm" id="btn-revalidar" onclick="revalidar()">Validar Discovery</button>
+    </div>
+    <div class="score-big">
+      <div class="score-big-num" id="score-num" style="color:var(--c-blue)">—</div>
+      <div class="score-big-label">Completitud General</div>
+    </div>
+    <div style="max-width:400px;margin:0 auto">
+      <div class="seccion-bar" style="height:10px"><div class="seccion-bar-fill" id="score-bar" style="width:0%;background:var(--c-blue)"></div></div>
+    </div>
+  </div>
+
+  <!-- Detalle por sección -->
+  <div class="card" style="margin-bottom:20px" id="card-secciones-detalle">
+    <div class="card-title">Detalle por Sección</div>
+    <div class="card-sub">Cada sección del documento evaluada individualmente</div>
+    <div class="seccion-grid" id="secciones-grid"></div>
+  </div>
+
+  <!-- Huecos / Faltantes -->
+  <div class="card" style="margin-bottom:20px;display:none" id="card-faltantes">
+    <div class="card-title" style="color:#E53935">Información Faltante</div>
+    <div class="card-sub">Campos que necesitan completarse para avanzar</div>
+    <div id="faltantes-list"></div>
+  </div>
+
+  <!-- ═══ VALIDACIÓN N2 ═══ -->
+  <div style="margin:32px 0 16px;border-top:3px solid var(--c-blue);padding-top:20px">
+    <div class="step-header" style="border:none;padding:0;margin-bottom:20px">
+      <div class="step-number" style="background:#7C3AED">N2</div>
+      <div>
+        <div class="step-title">Validación Componentes N2</div>
+        <div class="step-sub">Validación del Excel de infraestructura (Req Infra, Recursos AWS, Recursos GCP)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Botón validar N2 -->
+  <div class="card" style="margin-bottom:20px" id="card-n2-action">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div class="card-title">Validar Excel de Componentes</div>
+        <div class="card-sub">Analiza el archivo .xlsx N2 y valida completitud por sección</div>
+      </div>
+      <button class="btn btn-blue btn-sm" id="btn-validar-n2" onclick="validarN2()">Validar N2</button>
+    </div>
+  </div>
+
+  <!-- Score N2 -->
+  <div class="card" style="margin-bottom:20px;display:none" id="card-n2-score">
+    <div class="card-title">Resultado N2</div>
+    <div class="score-big">
+      <div class="score-big-num" id="n2-score-num" style="color:var(--c-blue)">—</div>
+      <div class="score-big-label">Completitud N2</div>
+    </div>
+    <div style="max-width:400px;margin:0 auto">
+      <div class="seccion-bar" style="height:10px"><div class="seccion-bar-fill" id="n2-score-bar" style="width:0%;background:var(--c-blue)"></div></div>
+    </div>
+  </div>
+
+  <!-- Detalle N2 por sección -->
+  <div class="card" style="margin-bottom:20px;display:none" id="card-n2-detalle">
+    <div class="card-title">Detalle por Sección N2</div>
+    <div class="seccion-grid" id="n2-secciones-grid"></div>
+  </div>
+
+  <!-- Recursos detectados N2 -->
+  <div class="card" style="margin-bottom:20px;display:none" id="card-n2-recursos">
+    <div class="card-title">Recursos Detectados</div>
+    <div id="n2-recursos-list"></div>
+  </div>
+
+  <!-- ═══ PUNTAJE GENERAL COMBINADO ═══ -->
+  <div class="card" style="margin-bottom:20px;display:none;background:linear-gradient(135deg,#EDE7F6,#E3F2FD);border:2px solid var(--c-blue)" id="card-general">
+    <div class="card-title" style="font-size:16px">📊 Puntaje General Combinado</div>
+    <div class="card-sub">50% Quick Discovery + 50% Componentes N2</div>
+    <div class="score-big" style="margin:16px 0">
+      <div class="score-big-num" id="general-score-num" style="font-size:64px">—</div>
+      <div class="score-big-label">Puntaje General</div>
+    </div>
+    <div style="max-width:500px;margin:0 auto">
+      <div class="seccion-bar" style="height:12px"><div class="seccion-bar-fill" id="general-score-bar" style="width:0%"></div></div>
+      <div style="display:flex;justify-content:space-between;margin-top:10px;font-size:12px;color:var(--c-gray-500)">
+        <span id="general-disc-label">Discovery: —</span>
+        <span id="general-n2-label">N2: —</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ CORREO DE SEGUIMIENTO ═══ -->
+  <div class="card" style="margin-bottom:20px;display:none" id="card-correo">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div>
+        <div class="card-title">📧 Correo de Seguimiento</div>
+        <div class="card-sub">Copia y pega este correo para solicitar la información faltante</div>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="copiarCorreo()">📋 Copiar</button>
+    </div>
+    <textarea id="correo-texto" style="width:100%;min-height:280px;font-size:12px;font-family:monospace;padding:14px;border:1.5px solid var(--c-gray-200);border-radius:var(--radius-md);resize:vertical;line-height:1.6" readonly></textarea>
+  </div>
+
+  <!-- Navegación -->
+  <div class="step-nav">
+    <a href="listado.html" class="btn btn-outline btn-sm">← Volver al listado</a>
+    <div style="display:flex;gap:10px">
+      <a id="btn-siguiente" href="#" class="btn btn-primary btn-sm">Siguiente: Servicios →</a>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_BASE = 'https://1vo8syihoe.execute-api.us-east-1.amazonaws.com/prod';
+const API_KEY  = '58kfc3qsCWalMqjcrE89a5xOn6FLfFt821ohMh1E';
+const HEADERS  = { 'x-api-key': API_KEY, 'Content-Type': 'application/json' };
+
+const params = new URLSearchParams(location.search);
+const ID = params.get('id');
+
+document.getElementById('btn-siguiente').href = `paso2-servicios.html?id=${ID}`;
+
+let puntajeDiscovery = 0;
+let puntajeN2 = 0;
+let tieneDiscovery = false;
+let tieneComponentes = false;
+
+async function load() {
+  if (!ID) return;
+  document.getElementById('sub-title').textContent = `Iniciativa: ${ID}`;
+
+  // Cargar metadata
+  const metaRes = await fetch(`${API_BASE}/iniciativas/${ID}`, { headers: HEADERS });
+  if (!metaRes.ok) return;
+  const meta = await metaRes.json();
+
+  // Detectar tipos de insumos
+  const insumos = meta.insumos || [];
+  tieneDiscovery = insumos.some(i => i.tipo === 'discovery');
+  tieneComponentes = insumos.some(i => i.tipo === 'componentes');
+
+  // Renderizar insumos
+  document.getElementById('insumos-list').innerHTML = insumos.length
+    ? insumos.map(i => {
+        const name = i.key?.split('/').pop()?.replace(/\+/g,' ') || i.key;
+        const iconColor = i.tipo === 'discovery' ? '#1B2CC1' : i.tipo === 'componentes' ? '#7C3AED' : '#FF8C00';
+        return `<div class="insumo-chip">
+          <div class="insumo-chip-icon" style="background:${iconColor}15"><svg viewBox="0 0 24 24" fill="none" stroke="${iconColor}" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div><div class="insumo-chip-name">${name}</div><div class="insumo-chip-meta">${i.tipo} • ${i.subido_en ? new Date(i.subido_en).toLocaleString('es-MX') : ''}</div></div>
+        </div>`;
+      }).join('')
+    : '<div style="color:var(--c-gray-500);font-size:13px;padding:12px">Sin documentos cargados</div>';
+
+  // Mostrar avisos de documentos faltantes
+  const missing = [];
+  if (!tieneDiscovery) missing.push('Quick Discovery (.docx)');
+  if (!tieneComponentes) missing.push('Componentes N2 (.xlsx)');
+  if (missing.length) {
+    document.getElementById('missing-docs').style.display = 'block';
+    document.getElementById('missing-docs').innerHTML = missing.map(m =>
+      `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#FFF3E0;border-radius:8px;margin-bottom:6px;font-size:12px;color:#E65100;font-weight:600">
+        <span>⚠️</span> Falta: ${m}
+      </div>`
+    ).join('');
+  }
+
+  // Discovery section
+  if (tieneDiscovery) {
+    try {
+      const valRes = await fetch(`${API_BASE}/iniciativas/${ID}/resultados/discovery`, { headers: HEADERS });
+      if (valRes.ok) {
+        const val = await valRes.json();
+        renderValidacion(val, meta);
+      } else {
+        document.getElementById('alert-area').innerHTML = `<div class="alert-box alert-warn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+          Discovery subido pero aún no validado. Haz click en "Validar Discovery" para iniciar.
+        </div>`;
+      }
+    } catch(e) {}
+  } else {
+    // No hay discovery — ocultar secciones de discovery
+    document.getElementById('card-discovery').style.display = 'none';
+    document.getElementById('card-secciones-detalle').style.display = 'none';
+    document.getElementById('card-faltantes').style.display = 'none';
+  }
+
+  // N2 section
+  if (!tieneComponentes) {
+    document.getElementById('card-n2-action').innerHTML = `<div style="text-align:center;padding:20px;color:var(--c-gray-500);font-size:13px">
+      <span style="font-size:24px">📋</span><br>No se subió archivo de Componentes N2<br>
+      <a href="ingesta.html?id=${ID}" class="btn btn-outline btn-sm" style="margin-top:12px">Subir Excel N2</a>
+    </div>`;
+  }
+
+  // Cargar resultado N2 si existe
+  loadN2Result();
+}
+
+function renderValidacion(val, meta) {
+  const puntaje = val.puntaje_total || 0;
+  puntajeDiscovery = puntaje;
+  const aprobado = puntaje >= 75;
+
+  // Score
+  const color = aprobado ? '#00A651' : puntaje >= 50 ? '#FF8C00' : '#E53935';
+  document.getElementById('score-num').textContent = puntaje + '%';
+  document.getElementById('score-num').style.color = color;
+  document.getElementById('score-bar').style.width = puntaje + '%';
+  document.getElementById('score-bar').style.background = color;
+
+  // Alert
+  if (aprobado) {
+    document.getElementById('alert-area').innerHTML = `<div class="alert-box alert-success">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      Documento aprobado — completitud suficiente para continuar al siguiente paso
+    </div>`;
+  } else {
+    document.getElementById('alert-area').innerHTML = `<div class="alert-box alert-warn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+      Documento incompleto (${puntaje}%) — se requiere mínimo 75% para avanzar
+    </div>`;
+  }
+
+  // Secciones
+  const secciones = val.secciones || {};
+  const labels = { metadata:'Metadata', requisitos:'Requisitos', datos:'Datos', dependencias:'Dependencias', entorno_red:'Entorno / Red', migracion:'Migración', infraestructura:'Infraestructura', dr:'Disaster Recovery' };
+
+  document.getElementById('secciones-grid').innerHTML = Object.entries(secciones).map(([key, sec]) => {
+    const p = sec.puntaje || 0;
+    const cls = p >= 80 ? 'ok' : p >= 50 ? 'warn' : 'fail';
+    const barColor = p >= 80 ? '#00A651' : p >= 50 ? '#FF8C00' : '#E53935';
+    const campos = sec.campos || [];
+    const completos = campos.filter(c => c.estado === 'COMPLETO');
+    const faltantes = campos.filter(c => c.estado !== 'COMPLETO');
+
+    return `<div class="seccion-card ${cls}">
+      <div class="seccion-header">
+        <span class="seccion-nombre">${labels[key] || key}</span>
+        <span class="seccion-pct ${cls}">${p}%</span>
+      </div>
+      <div class="seccion-bar"><div class="seccion-bar-fill" style="width:${p}%;background:${barColor}"></div></div>
+      <div style="font-size:11px;color:var(--c-gray-500);margin-bottom:4px">${completos.length}/${campos.length} campos completos</div>
+      ${faltantes.slice(0,3).map(c => `<div class="campo-item faltante">✗ ${c.campo}</div>`).join('')}
+      ${faltantes.length > 3 ? `<div class="campo-item" style="color:var(--c-gray-400)">+${faltantes.length-3} más...</div>` : ''}
+    </div>`;
+  }).join('');
+
+  // Faltantes globales
+  const huecos = val.huecos_criticos || [];
+  if (huecos.length) {
+    document.getElementById('card-faltantes').style.display = 'block';
+    document.getElementById('faltantes-list').innerHTML = huecos.map(h => {
+      const texto = typeof h === 'object' ? h.pregunta || h.campo : h;
+      return `<div style="display:flex;align-items:flex-start;gap:8px;padding:10px 0;border-bottom:1px solid var(--c-gray-200)">
+        <span style="color:#E53935;font-size:14px;flex-shrink:0">●</span>
+        <span style="font-size:13px;color:var(--c-gray-700)">${texto}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // Siempre permite avanzar, pero con advertencia visual
+  if (!aprobado) {
+    document.getElementById('btn-siguiente').style.opacity = '.75';
+    document.getElementById('btn-siguiente').title = 'Documento incompleto — puedes continuar bajo tu responsabilidad';
+  }
+}
+
+function showProcessing() {
+  const overlay = document.createElement('div');
+  overlay.className = 'processing-overlay';
+  overlay.id = 'processing-overlay';
+  overlay.innerHTML = `
+    <svg class="processing-gear" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <path d="M12 15a3 3 0 100-6 3 3 0 000 6z"/>
+      <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
+    </svg>
+    <div class="processing-text">Analizando documento con IA<span class="processing-dots"></span></div>
+    <div class="processing-sub">Claude está evaluando la completitud de cada sección del Quick Discovery</div>
+    <div class="processing-timer" id="processing-timer">0s</div>
+  `;
+  document.body.appendChild(overlay);
+  const start = Date.now();
+  overlay._interval = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - start) / 1000);
+    document.getElementById('processing-timer').textContent = `${elapsed}s transcurridos`;
+  }, 1000);
+}
+
+function hideProcessing() {
+  const overlay = document.getElementById('processing-overlay');
+  if (overlay) { clearInterval(overlay._interval); overlay.remove(); }
+}
+
+async function revalidar() {
+  const btn = document.getElementById('btn-revalidar');
+  btn.disabled = true;
+  btn.textContent = 'Validando...';
+  showProcessing();
+  document.querySelector('.processing-text').textContent = 'Validando Quick Discovery...';
+  document.querySelector('.processing-sub').textContent = 'Claude está evaluando la completitud de cada sección';
+  try {
+    await fetch(`${API_BASE}/iniciativas/${ID}/validar`, {
+      method: 'POST', headers: HEADERS,
+      body: JSON.stringify({ etapa: 'validar_discovery' })
+    });
+    let intentos = 0;
+    const poll = setInterval(async () => {
+      intentos++;
+      const r = await fetch(`${API_BASE}/iniciativas/${ID}`, { headers: HEADERS });
+      const d = await r.json();
+      if (d.estado !== 'VALIDANDO' || intentos >= 45) {
+        clearInterval(poll);
+        hideProcessing();
+        location.reload();
+      }
+    }, 4000);
+  } catch(e) {
+    hideProcessing();
+    btn.disabled = false;
+    btn.textContent = 'Validar Discovery';
+  }
+}
+
+// ═══ VALIDACIÓN N2 ═══
+async function validarN2() {
+  const btn = document.getElementById('btn-validar-n2');
+  btn.disabled = true;
+  btn.textContent = 'Validando N2...';
+  showProcessing();
+  document.querySelector('.processing-text').textContent = 'Validando Excel N2...';
+  document.querySelector('.processing-sub').textContent = 'Analizando completitud de Req Infra, Recursos AWS y GCP';
+
+  try {
+    await fetch(`${API_BASE}/iniciativas/${ID}/validar`, {
+      method: 'POST', headers: HEADERS,
+      body: JSON.stringify({ etapa: 'validar_n2' })
+    });
+
+    let intentosN2 = 0;
+    const poll = setInterval(async () => {
+      intentosN2++;
+      const r = await fetch(`${API_BASE}/iniciativas/${ID}`, { headers: HEADERS });
+      const d = await r.json();
+      if (d.estado !== 'VALIDANDO' || intentosN2 >= 20) {
+        clearInterval(poll);
+        hideProcessing();
+        btn.disabled = false;
+        btn.textContent = 'Validar N2';
+        loadN2Result();
+      }
+    }, 3000);
+  } catch(e) {
+    hideProcessing();
+    btn.disabled = false;
+    btn.textContent = 'Validar N2';
+  }
+}
+
+async function loadN2Result() {
+  try {
+    const res = await fetch(`${API_BASE}/iniciativas/${ID}/resultados/n2`, { headers: HEADERS });
+    if (!res.ok) return;
+    const data = await res.json();
+    renderN2(data);
+  } catch(e) { /* N2 aún no validado o CORS — se ignora */ }
+}
+
+function renderN2(data) {
+  puntajeN2 = data.puntaje_total || 0;
+  const color = puntajeN2 >= 70 ? '#00A651' : puntajeN2 >= 40 ? '#FF8C00' : '#E53935';
+
+  // Score
+  document.getElementById('card-n2-score').style.display = 'block';
+  document.getElementById('n2-score-num').textContent = puntajeN2 + '%';
+  document.getElementById('n2-score-num').style.color = color;
+  document.getElementById('n2-score-bar').style.width = puntajeN2 + '%';
+  document.getElementById('n2-score-bar').style.background = color;
+
+  // Secciones
+  const secciones = data.secciones || {};
+  const labels = { req_infra_ambiente: 'Req Infra-Ambiente', recursos_aws: 'Recursos AWS', recursos_gcp: 'Recursos GCP' };
+  const grid = document.getElementById('n2-secciones-grid');
+  document.getElementById('card-n2-detalle').style.display = 'block';
+
+  grid.innerHTML = Object.entries(secciones).map(([key, sec]) => {
+    const p = sec.puntaje || 0;
+    const cls = p >= 70 ? 'ok' : p >= 40 ? 'warn' : 'fail';
+    const barColor = p >= 70 ? '#00A651' : p >= 40 ? '#FF8C00' : '#E53935';
+
+    let detalle = '';
+    if (sec.estado === 'HOJA_NO_ENCONTRADA') {
+      detalle = `<div style="font-size:12px;color:#E65100;padding:6px 0">⚠️ Hoja no encontrada en el Excel — verifica que el archivo sea el correcto</div>`;
+    } else if (sec.campos && sec.campos.length) {
+      const completos = sec.campos.filter(c => c.estado === 'COMPLETO').length;
+      const faltantes = sec.campos.filter(c => c.estado !== 'COMPLETO');
+      detalle = `<div style="font-size:11px;color:var(--c-gray-500);margin-bottom:6px">${completos}/${sec.campos.length} campos completos</div>`;
+      if (faltantes.length) {
+        detalle += `<div style="font-size:11px;font-weight:700;color:#E53935;margin-bottom:4px">Campos faltantes:</div>`;
+        detalle += faltantes.map(c => `<div class="campo-item faltante">✗ ${c.campo}</div>`).join('');
+      }
+    } else if (sec.subsecciones) {
+      const faltantes = sec.subsecciones.filter(s => s.estado === 'VACIO');
+      const noEncontradas = sec.subsecciones.filter(s => s.estado === 'HOJA_NO_ENCONTRADA');
+      const configurados = sec.subsecciones.filter(s => s.estado === 'CONFIGURADO');
+
+      detalle = configurados.map(s => {
+        let extra = '';
+        if (s.detalle && Array.isArray(s.detalle)) {
+          // Filtrar headers y vacíos
+          const reales = s.detalle.filter(r => {
+            const vals = Object.values(r).filter(v => v && !['SO','Distribucion','Version','Vcpu','Memory','Storage','Nombre','Motor BD','Recursos de la Base de datos'].includes(v));
+            return vals.length > 0;
+          });
+          if (reales.length) extra = ` <span style="font-size:10px;color:var(--c-gray-500)">(${reales.length} instancia${reales.length>1?'s':''})</span>`;
+        }
+        return `<div style="font-size:12px;color:#00A651;padding:2px 0">✓ ${s.nombre}${extra}</div>`;
+      }).join('');
+
+      if (faltantes.length) {
+        detalle += `<div style="font-size:11px;font-weight:700;color:#E53935;margin:6px 0 4px">Sin configurar:</div>`;
+        detalle += faltantes.map(s => `<div style="font-size:12px;color:#E53935;padding:2px 0">✗ ${s.nombre} — sin datos en el Excel</div>`).join('');
+      }
+      if (noEncontradas.length) {
+        detalle += `<div style="font-size:11px;font-weight:700;color:#FF8C00;margin:6px 0 4px">Hojas no encontradas:</div>`;
+        detalle += noEncontradas.map(s => `<div style="font-size:12px;color:#FF8C00;padding:2px 0">⚠ ${s.nombre}</div>`).join('');
+      }
+    }
+
+    return `<div class="seccion-card ${cls}">
+      <div class="seccion-header">
+        <span class="seccion-nombre">${labels[key] || key}</span>
+        <span class="seccion-pct ${cls}">${p}%</span>
+      </div>
+      <div class="seccion-bar"><div class="seccion-bar-fill" style="width:${p}%;background:${barColor}"></div></div>
+      ${detalle}
+    </div>`;
+  }).join('');
+
+  // Recursos detectados
+  const recursos = data.recursos_detectados || {};
+  if (recursos.aws?.length || recursos.gcp?.length) {
+    document.getElementById('card-n2-recursos').style.display = 'block';
+    let html = '';
+    if (recursos.aws?.length) {
+      html += `<div style="margin-bottom:12px"><strong style="font-size:12px;color:var(--c-blue)">AWS:</strong> <span style="font-size:12px;color:var(--c-gray-600)">${recursos.aws.join(', ')}</span></div>`;
+    }
+    if (recursos.gcp?.length) {
+      html += `<div><strong style="font-size:12px;color:#4285F4">GCP:</strong> <span style="font-size:12px;color:var(--c-gray-600)">${recursos.gcp.join(', ')}</span></div>`;
+    }
+    document.getElementById('n2-recursos-list').innerHTML = html;
+  }
+
+  // Calcular puntaje general
+  calcularGeneral();
+  // Generar correo si ya hay discovery también
+  if (puntajeDiscovery) generarCorreo();
+}
+
+function calcularGeneral() {
+  if (!puntajeDiscovery && !puntajeN2) return;
+
+  let general = 0;
+  let label = '';
+  if (tieneDiscovery && tieneComponentes && puntajeDiscovery && puntajeN2) {
+    general = Math.round(puntajeDiscovery * 0.5 + puntajeN2 * 0.5);
+    label = '50% Quick Discovery + 50% Componentes N2';
+  } else if (puntajeDiscovery && !puntajeN2) {
+    general = puntajeDiscovery;
+    label = '100% Quick Discovery (sin N2)';
+  } else if (!puntajeDiscovery && puntajeN2) {
+    general = puntajeN2;
+    label = '100% Componentes N2 (sin Discovery)';
+  } else {
+    general = Math.round(puntajeDiscovery * 0.5 + puntajeN2 * 0.5);
+    label = '50% Quick Discovery + 50% Componentes N2';
+  }
+
+  const color = general >= 75 ? '#00A651' : general >= 50 ? '#FF8C00' : '#E53935';
+
+  document.getElementById('card-general').style.display = 'block';
+  document.getElementById('card-general').querySelector('.card-sub').textContent = label;
+  document.getElementById('general-score-num').textContent = general + '%';
+  document.getElementById('general-score-num').style.color = color;
+  document.getElementById('general-score-bar').style.width = general + '%';
+  document.getElementById('general-score-bar').style.background = color;
+  document.getElementById('general-disc-label').textContent = `Discovery: ${puntajeDiscovery || '—'}%`;
+  document.getElementById('general-n2-label').textContent = `N2: ${puntajeN2 || '—'}%`;
+
+  // Generar correo automáticamente
+  setTimeout(generarCorreo, 300);
+}
+
+load();
+
+// ═══ CORREO DE SEGUIMIENTO ═══
+function generarCorreo() {
+  const lineas = [];
+  const hoy = new Date().toLocaleDateString('es-MX', { year:'numeric', month:'long', day:'numeric' });
+
+  // Detectar qué documentos se analizaron
+  const docsAnalizados = [];
+  if (puntajeDiscovery) docsAnalizados.push('Quick Discovery');
+  if (puntajeN2) docsAnalizados.push('Componentes de Infraestructura N2');
+  const docsStr = docsAnalizados.join(' y ') || 'los documentos compartidos';
+
+  const puntajeGeneral = puntajeDiscovery && puntajeN2
+    ? Math.round(puntajeDiscovery * 0.5 + puntajeN2 * 0.5)
+    : puntajeDiscovery || puntajeN2;
+
+  lineas.push(`Estimado equipo,`);
+  lineas.push(``);
+  lineas.push(`De acuerdo con el análisis realizado sobre ${docsStr} de la iniciativa ${ID}, el puntaje de completitud obtenido es de ${puntajeGeneral}%, el cual no alcanza el mínimo requerido del 80% para poder generar una estimación de arquitectura cloud.`);
+  lineas.push(``);
+  lineas.push(`¿Nos podrían apoyar completando y/o aclarando las siguientes secciones?`);
+  lineas.push(``);
+
+  // Huecos de Discovery
+  const huecos = Array.from(document.querySelectorAll('#faltantes-list > div > span:last-child')).map(el => el.textContent.trim()).filter(Boolean);
+  if (huecos.length) {
+    lineas.push(`📄 Quick Discovery — información faltante:`);
+    huecos.forEach((h, i) => lineas.push(`  ${i+1}. ${h}`));
+    lineas.push(``);
+  }
+
+  // Faltantes N2
+  const n2Faltantes = [];
+  const reqCard = document.querySelector('#n2-secciones-grid .seccion-card:first-child');
+  if (reqCard && reqCard.textContent.includes('Hoja no encontrada')) {
+    n2Faltantes.push('La hoja "(N2,D) Req Infra-Ambiente" no fue encontrada en el Excel — por favor verificar que se esté usando el formato N2 oficial de Coppel');
+  }
+  document.querySelectorAll('#n2-secciones-grid div[style*="E53935"]').forEach(el => {
+    const txt = el.textContent.replace(/[✗✓⚠]/g,'').trim();
+    if (txt && !txt.includes('Sin configurar') && !txt.includes('Hojas no') && !txt.includes('Hoja no')) {
+      n2Faltantes.push(txt);
+    }
+  });
+
+  if (n2Faltantes.length) {
+    lineas.push(`📊 Componentes N2 — pendientes por completar:`);
+    n2Faltantes.forEach((f, i) => lineas.push(`  ${i+1}. ${f}`));
+    lineas.push(``);
+  }
+
+  if (!huecos.length && !n2Faltantes.length) {
+    lineas.push(`  • Por favor revisar que todos los campos obligatorios del documento estén completos.`);
+    lineas.push(``);
+  }
+
+  lineas.push(`Quedo a sus órdenes para cualquier duda o aclaración.`);
+  lineas.push(``);
+  lineas.push(`Saludos,`);
+  lineas.push(`Equipo de Arquitectura Cloud — Coppel`);
+  lineas.push(`${hoy}`);
+
+  const texto = lineas.join('\n');
+  document.getElementById('correo-texto').value = texto;
+  document.getElementById('card-correo').style.display = 'block';
+  document.getElementById('card-correo').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function copiarCorreo() {
+  const ta = document.getElementById('correo-texto');
+  ta.select();
+  document.execCommand('copy');
+  const btn = event.target;
+  btn.textContent = '✓ Copiado';
+  setTimeout(() => btn.textContent = '📋 Copiar', 2000);
+}
+
+// ═══ SUBIDA INLINE DE ARCHIVOS ═══
+const pendingFiles = [];
+
+document.querySelectorAll('.mini-drop input[type=file]').forEach(input => {
+  const zone = input.closest('.mini-drop');
+  const tipo = zone.dataset.tipo;
+
+  input.addEventListener('change', e => {
+    Array.from(e.target.files).forEach(f => pendingFiles.push({ file: f, tipo }));
+    zone.classList.add('has-file');
+    renderUploadQueue();
+    e.target.value = '';
+  });
+
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.style.borderColor = 'var(--c-blue)'; });
+  zone.addEventListener('dragleave', () => { zone.style.borderColor = ''; });
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.style.borderColor = '';
+    Array.from(e.dataTransfer.files).forEach(f => pendingFiles.push({ file: f, tipo }));
+    zone.classList.add('has-file');
+    renderUploadQueue();
+  });
+});
+
+function renderUploadQueue() {
+  const el = document.getElementById('upload-queue');
+  const btn = document.getElementById('btn-subir');
+  if (!pendingFiles.length) {
+    el.innerHTML = '';
+    btn.style.display = 'none';
+    return;
+  }
+  btn.style.display = 'inline-flex';
+  el.innerHTML = pendingFiles.map((p, i) =>
+    `<div class="upload-queue-item">
+      <span>📂 ${p.file.name}</span>
+      <span style="color:var(--c-gray-500);font-size:10px">${p.tipo}</span>
+      <span class="remove" onclick="removePending(${i})">✕</span>
+    </div>`
+  ).join('');
+}
+
+function removePending(idx) {
+  pendingFiles.splice(idx, 1);
+  renderUploadQueue();
+  document.querySelectorAll('.mini-drop').forEach(z => {
+    if (!pendingFiles.some(p => p.tipo === z.dataset.tipo)) z.classList.remove('has-file');
+  });
+}
+
+async function subirArchivos() {
+  if (!pendingFiles.length) return;
+  const btn = document.getElementById('btn-subir');
+  btn.disabled = true;
+  btn.textContent = 'Subiendo...';
+
+  const archivos = {};
+  pendingFiles.forEach(p => {
+    if (!archivos[p.tipo]) archivos[p.tipo] = [];
+    archivos[p.tipo].push(p.file.name);
+  });
+
+  try {
+    const res = await fetch(`${API_BASE}/iniciativas`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': API_KEY },
+      body: JSON.stringify({ id_iniciativa: ID, nombre: ID, solicitante: 'usuario', archivos })
+    });
+    if (!res.ok) throw new Error((await res.json()).error || `HTTP ${res.status}`);
+    const data = await res.json();
+
+    for (const [tipo, urls] of Object.entries(data.upload_urls || {})) {
+      for (const urlInfo of urls) {
+        const pending = pendingFiles.find(p => p.tipo === tipo && p.file.name === urlInfo.filename);
+        if (pending) {
+          await fetch(urlInfo.upload_url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/octet-stream' },
+            body: pending.file
+          });
+        }
+      }
+    }
+
+    pendingFiles.length = 0;
+    renderUploadQueue();
+    document.querySelectorAll('.mini-drop').forEach(z => z.classList.remove('has-file'));
+    btn.textContent = '✓ Archivos subidos';
+    btn.disabled = false;
+
+    // Solo recargar para mostrar nuevos insumos, no validar
+    setTimeout(() => location.reload(), 1000);
+  } catch (err) {
+    alert('Error subiendo: ' + err.message);
+    btn.disabled = false;
+    btn.textContent = 'Subir archivos';
+  }
+}
+</script>
+<script src="js/sidebar.js"></script>
+</body>
+</html>

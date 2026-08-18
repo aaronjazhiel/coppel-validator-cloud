@@ -1,0 +1,49 @@
+sequenceDiagram
+    participant U as Usuario
+    participant P as Portal Web
+    participant AG as API Gateway
+    participant LC as Lambda crear
+    participant S3 as S3 Bucket
+    participant LR as Lambda registrar
+    participant DB as DynamoDB
+    participant LP as Lambda procesar
+    participant CL as Claude AI
+    participant LG as Lambda generar
+
+    Note over U,LG: FASE 1 - INGESTA
+    U->>P: Crea iniciativa + selecciona archivos
+    P->>AG: POST /iniciativas
+    AG->>LC: Invoke
+    LC->>DB: Crear registro estado=INGESTA
+    LC->>S3: Generar presigned URLs
+    LC-->>P: 201 + upload_urls
+    P->>S3: PUT archivos via presigned URL
+    S3->>LR: Trigger ObjectCreated
+    LR->>DB: Registrar insumo
+
+    Note over U,LG: FASE 2 - PROCESAMIENTO
+    U->>P: Click Procesar
+    P->>AG: POST /iniciativas/id/procesar
+    AG->>LP: Invoke sync responde 202
+    LP->>LP: Auto-invoke async
+    LP->>S3: Leer insumos docx xml xlsx txt
+    LP->>CL: Enviar texto + schema tool_use
+    CL-->>LP: Ficha Tecnica estructurada
+    LP->>S3: Guardar ficha.json
+    LP->>DB: Actualizar estado=EXTRAIDO
+
+    Note over U,LG: FASE 3 - REVISION
+    U->>P: Ver y editar Ficha Tecnica
+    P->>AG: GET /iniciativas/id/ficha
+    P->>AG: PUT /iniciativas/id/ficha
+
+    Note over U,LG: FASE 4 - GENERACION
+    U->>P: Click Generar diagrama documento costos
+    P->>AG: POST /iniciativas/id/generar/tipo
+    AG->>LG: Invoke sync responde 202
+    LG->>LG: Auto-invoke async
+    LG->>S3: Leer ficha.json
+    LG->>CL: Generar artefacto
+    CL-->>LG: Contenido generado
+    LG->>S3: Guardar salida
+    LG->>DB: Actualizar estado=GENERADO
